@@ -5,10 +5,11 @@
 #define DEBUG          2
 #define WAIT_FOREVER() for (;;) delay(100)
 
-#define COLOR_COUNT          7
-#define COLOR_C_THRESHOLD    160
-#define COLOR_DIST_THRESHOLD 10
-// #define COLOR_HYSTERESIS     2
+#define COLOR_COUNT           7
+#define COLOR_C_THRESHOLD     160
+#define COLOR_DIST_THRESHOLD  15
+#define COLOR_CDIST_THRESHOLD 80
+// #define COLOR_HYSTERESIS      2
 
 #define MP3_FOLDER    1   // 01 – low A, 02 – high A
 #define MP3_VOLUME    30  // 0–30
@@ -145,7 +146,10 @@ Color identifyColor(uint16_t r, uint16_t g, uint16_t b, uint16_t c) {
         Serial.print(dist); Serial.print("/"); Serial.print(cDist);
         Serial.print((i < COLOR_COUNT-1) ? ", " : "\n");
 #endif
-        if (dist < COLOR_DIST_THRESHOLD && dist < bestMatchDist && cDist < bestMatchCDist) {
+        if (
+            dist < COLOR_DIST_THRESHOLD && cDist < COLOR_CDIST_THRESHOLD &&
+            dist < bestMatchDist && cDist < bestMatchCDist
+        ) {
             bestMatch = static_cast<Color>(color);
             bestMatchDist = dist;
             bestMatchCDist = cDist;
