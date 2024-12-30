@@ -7,7 +7,7 @@
 
 #define COLOR_COUNT           7
 #define COLOR_C_THRESHOLD     160
-#define COLOR_DIST_THRESHOLD  15
+#define COLOR_DIST_THRESHOLD  10
 #define COLOR_CDIST_THRESHOLD 80
 // #define COLOR_HYSTERESIS      2
 
@@ -175,7 +175,7 @@ uint16_t colorDistance(
     int gDiff = static_cast<int>(g) - static_cast<int>(gSample);
     int bDiff = static_cast<int>(b) - static_cast<int>(bSample);
     return static_cast<uint16_t>(
-        sqrt(pow(rDiff, 2) + pow(rDiff, 2) + pow(bDiff, 2))
+        sqrt(pow(rDiff, 2) + pow(gDiff, 2) + pow(bDiff, 2))
     );
 }
 
