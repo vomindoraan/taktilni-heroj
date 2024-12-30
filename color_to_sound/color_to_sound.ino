@@ -7,8 +7,8 @@
 
 #define COLOR_COUNT           7
 #define COLOR_C_THRESHOLD     160
-#define COLOR_DIST_THRESHOLD  10
-#define COLOR_CDIST_THRESHOLD 80
+#define COLOR_DIST_THRESHOLD  15
+#define COLOR_CDIST_THRESHOLD 100
 // #define COLOR_HYSTERESIS      2
 
 #define MP3_FOLDER    1   // 01 – low A, 02 – high A
@@ -38,13 +38,41 @@ enum Color : uint16_t {
 };
 
 uint16_t const COLOR_SAMPLES[COLOR_COUNT][5] = {
-    { Color::RED,    128, 37,  26,  196 },
-    { Color::GREEN,  55,  89,  48,  205 },
-    { Color::BLUE,   30,  56,  75,  168 },
-    { Color::YELLOW, 369, 233, 87,  744 },
-    { Color::CYAN,   104, 221, 168, 492 },
-    { Color::ORANGE, 332, 114, 76,  511 },
-    { Color::PINK,   351, 277, 229, 904 },
+    // Sensor 1
+    { Color::RED,    153, 52,  39,  242 },
+    { Color::GREEN,  77,  118, 67,  264 },
+    { Color::BLUE,   49,  78,  102, 227 },
+    { Color::YELLOW, 464, 301, 117, 943 },
+    { Color::CYAN,   136, 261, 197, 616 },
+    { Color::ORANGE, 371, 124, 78,  580 },
+    { Color::PINK,   380, 306, 253, 985 },
+
+    // // Sensor 2
+    // { Color::RED,    233, 84,  60,  359 },
+    // { Color::GREEN,  128, 166, 93,  384 },
+    // { Color::BLUE,   83,  104, 119, 296 },
+    // { Color::YELLOW, 607, 397, 173, 1213 },
+    // { Color::CYAN,   182, 272, 194, 650 },
+    // { Color::ORANGE, 500, 175, 110, 766 },
+    // { Color::PINK,   512, 388, 305, 1216 },
+
+    // // Sensor 3
+    // { Color::RED,    150, 63,  49,  250 },
+    // { Color::GREEN,  72,  128, 73,  271 },
+    // { Color::BLUE,   41,  74,  91,  200 },
+    // { Color::YELLOW, 343, 250, 112, 718 },
+    // { Color::CYAN,   117, 235, 180, 528 },
+    // { Color::ORANGE, 336, 125, 84,  529 },
+    // { Color::PINK,   360, 315, 262, 938 },
+
+    // // Sensor 4
+    // { Color::RED,    222, 73,  47,  351 },
+    // { Color::GREEN,  111, 136, 69,  335 },
+    // { Color::BLUE,   78,  89,  98,  278 },
+    // { Color::YELLOW, 539, 303, 117, 1034 },
+    // { Color::CYAN,   164, 244, 171, 615 },
+    // { Color::ORANGE, 490, 150, 90,  755 },
+    // { Color::PINK,   477, 328, 253, 1123 },
 };
 
 Adafruit_TCS34725 tcs(TCS34725_INTEGRATIONTIME_101MS, TCS34725_GAIN_4X);
@@ -127,6 +155,7 @@ void loop() {
 }
 
 Color identifyColor(uint16_t r, uint16_t g, uint16_t b, uint16_t c) {
+    // Ignore background
     if (c < COLOR_C_THRESHOLD) {
         return Color::NONE;
     }
