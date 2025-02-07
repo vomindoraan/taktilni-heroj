@@ -170,7 +170,7 @@ Color identifyColor(uint16_t r, uint16_t g, uint16_t b, uint16_t c) {
     for (int16_t i = 0; i < COLOR_COUNT; i++) {
         auto [color, rSample, gSample, bSample, cSample] = COLOR_SAMPLES[i];
         uint16_t dist = colorDistance(r, g, b, c, rSample, gSample, bSample, cSample);
-        uint16_t cDist = abs(static_cast<int16_t>(c) - static_cast<int16_t>(cSample));
+        uint16_t cDist = abs(int16_t(c) - int16_t(cSample));
 #if DEBUG >= 2
         Serial.print(dist); Serial.print("/"); Serial.print(cDist);
         Serial.print((i < COLOR_COUNT-1) ? ", " : "\n");
@@ -179,7 +179,7 @@ Color identifyColor(uint16_t r, uint16_t g, uint16_t b, uint16_t c) {
             dist < COLOR_DIST_THRESHOLD && cDist < COLOR_CDIST_THRESHOLD &&
             dist < bestMatchDist && cDist < bestMatchCDist
         ) {
-            bestMatch = static_cast<Color>(color);
+            bestMatch = Color(color);
             bestMatchDist = dist;
             bestMatchCDist = cDist;
         }
@@ -193,19 +193,17 @@ uint16_t colorDistance(
     uint16_t rSample, uint16_t gSample, uint16_t bSample, uint16_t cSample
 ) {
     // Normalize values
-    r = (static_cast<uint32_t>(r) << 8) / c;
-    g = (static_cast<uint32_t>(g) << 8) / c;
-    b = (static_cast<uint32_t>(b) << 8) / c;
-    rSample = (static_cast<uint32_t>(rSample) << 8) / cSample;
-    gSample = (static_cast<uint32_t>(gSample) << 8) / cSample;
-    bSample = (static_cast<uint32_t>(bSample) << 8) / cSample;
+    r = (uint32_t(r) << 8) / c;
+    g = (uint32_t(g) << 8) / c;
+    b = (uint32_t(b) << 8) / c;
+    rSample = (uint32_t(rSample) << 8) / cSample;
+    gSample = (uint32_t(gSample) << 8) / cSample;
+    bSample = (uint32_t(bSample) << 8) / cSample;
 
-    int16_t rDiff = static_cast<int16_t>(r) - static_cast<int16_t>(rSample);
-    int16_t gDiff = static_cast<int16_t>(g) - static_cast<int16_t>(gSample);
-    int16_t bDiff = static_cast<int16_t>(b) - static_cast<int16_t>(bSample);
-    return static_cast<uint16_t>(
-        sqrt(pow(rDiff, 2) + pow(gDiff, 2) + pow(bDiff, 2))
-    );
+    int16_t rDiff = int16_t(r) - int16_t(rSample);
+    int16_t gDiff = int16_t(g) - int16_t(gSample);
+    int16_t bDiff = int16_t(b) - int16_t(bSample);
+    return sqrt(pow(rDiff, 2) + pow(gDiff, 2) + pow(bDiff, 2));
 }
 
 void playTrackFor(Color color) {
