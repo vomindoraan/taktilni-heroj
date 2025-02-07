@@ -167,10 +167,10 @@ Color identifyColor(uint16_t r, uint16_t g, uint16_t b, uint16_t c) {
 #if DEBUG >= 2
     Serial.print("[TCS] Distances: ");
 #endif
-    for (int i = 0; i < COLOR_COUNT; i++) {
+    for (int16_t i = 0; i < COLOR_COUNT; i++) {
         auto [color, rSample, gSample, bSample, cSample] = COLOR_SAMPLES[i];
         uint16_t dist = colorDistance(r, g, b, c, rSample, gSample, bSample, cSample);
-        uint16_t cDist = abs(static_cast<int>(c) - static_cast<int>(cSample));
+        uint16_t cDist = abs(static_cast<int16_t>(c) - static_cast<int16_t>(cSample));
 #if DEBUG >= 2
         Serial.print(dist); Serial.print("/"); Serial.print(cDist);
         Serial.print((i < COLOR_COUNT-1) ? ", " : "\n");
@@ -193,16 +193,16 @@ uint16_t colorDistance(
     uint16_t rSample, uint16_t gSample, uint16_t bSample, uint16_t cSample
 ) {
     // Normalize values
-    r = ((uint32_t) r << 8) / c;
-    g = ((uint32_t) g << 8) / c;
-    b = ((uint32_t) b << 8) / c;
-    rSample = ((uint32_t) rSample << 8) / cSample;
-    gSample = ((uint32_t) gSample << 8) / cSample;
-    bSample = ((uint32_t) bSample << 8) / cSample;
+    r = (static_cast<uint32_t>(r) << 8) / c;
+    g = (static_cast<uint32_t>(g) << 8) / c;
+    b = (static_cast<uint32_t>(b) << 8) / c;
+    rSample = (static_cast<uint32_t>(rSample) << 8) / cSample;
+    gSample = (static_cast<uint32_t>(gSample) << 8) / cSample;
+    bSample = (static_cast<uint32_t>(bSample) << 8) / cSample;
 
-    int rDiff = static_cast<int>(r) - static_cast<int>(rSample);
-    int gDiff = static_cast<int>(g) - static_cast<int>(gSample);
-    int bDiff = static_cast<int>(b) - static_cast<int>(bSample);
+    int16_t rDiff = static_cast<int16_t>(r) - static_cast<int16_t>(rSample);
+    int16_t gDiff = static_cast<int16_t>(g) - static_cast<int16_t>(gSample);
+    int16_t bDiff = static_cast<int16_t>(b) - static_cast<int16_t>(bSample);
     return static_cast<uint16_t>(
         sqrt(pow(rDiff, 2) + pow(gDiff, 2) + pow(bDiff, 2))
     );
