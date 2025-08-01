@@ -120,6 +120,7 @@ void setup() {
     mp3TrackMap[Color::PINK]   = Track::A;
 
     Serial.begin(SERIAL_BAUD_RATE);
+    swSerial.begin(SW_SERIAL_BAUD_RATE);
 
     if (!tcs.begin()) {
         Serial.println("[TCS] No sensor found");
