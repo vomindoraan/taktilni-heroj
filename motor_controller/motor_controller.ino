@@ -1,4 +1,6 @@
-#include "project.h"
+#include <SoftwareSerial.h>
+
+#include "common.h"
 
 #ifndef DEBUG
 #   define DEBUG 1
@@ -10,65 +12,69 @@
 #define BUTTON_MODE_PIN     15
 #define MOTOR_POWER_PIN     21
 #define MOTOR_DIRECTION_PIN 20
+#define SW_SERIAL_RX_PIN    5
+#define SW_SERIAL_TX_PIN    4
 
 class Switch {
 protected:
     int  pin;
-    bool active_state;
+    bool activeState;
 
 public:
-    Switch(int pin, bool active_state = LOW) :
+    Switch(int pin, bool activeState = LOW) :
         pin{pin},
-        active_state{active_state}
+        activeState{activeState}
     {}
 
     bool active() {
-        return digitalRead(pin) == active_state;
+        return digitalRead(pin) == activeState;
     }
 };
 
 class Button : public Switch {
 private:
     bool          state;
-    bool          last_state;
-    unsigned long debounce_delay;
-    unsigned long last_debounce_time;
+    bool          lastState;
+    unsigned long debounceDelay;
+    unsigned long lastDebounceTime;
 
 public:
-    Button(int pin, bool active_state = LOW, unsigned long debounce_delay = 50) :
-        Switch{pin, active_state},
-        state{!active_state},
-        last_state{!active_state},
-        debounce_delay{debounce_delay},
-        last_debounce_time{0}
+    Button(int pin, bool activeState = LOW, unsigned long debounceDelay = 50) :
+        Switch{pin, activeState},
+        state{!activeState},
+        lastState{!activeState},
+        debounceDelay{debounceDelay},
+        lastDebounceTime{0}
     {}
 
     bool pressed() {
         bool reading = digitalRead(pin);
-        auto current_time = millis();
-        if (reading != last_state) {
-            last_debounce_time = current_time;
+        auto currentTime = millis();
+        if (reading != lastState) {
+            lastDebounceTime = currentTime;
         }
         bool pressed = false;
-        if (current_time - last_debounce_time > debounce_delay && reading != state) {
+        if (currentTime - lastDebounceTime > debounceDelay && reading != state) {
             state = reading;
-            if (state == active_state) {
+            if (state == activeState) {
                 pressed = true;
             }
         }
-        last_state = reading;
+        lastState = reading;
         return pressed;
     }
 
     bool pressedOn() {
-        return state != active_state && pressed();
+        return state != activeState && pressed();
     }
 };
 
-Switch switch_forward = {SWITCH_FORWARD_PIN, LOW};
-Switch switch_reverse = {SWITCH_REVERSE_PIN, LOW};
-Button button_seek    = {BUTTON_SEEK_PIN,    LOW};
-Button button_mode    = {BUTTON_MODE_PIN,    LOW};
+Switch switchForward = {SWITCH_FORWARD_PIN, LOW};
+Switch switchReverse = {SWITCH_REVERSE_PIN, LOW};
+Button buttonSeek    = {BUTTON_SEEK_PIN,    LOW};
+Button buttonMode    = {BUTTON_MODE_PIN,    LOW};
+
+SoftwareSerial swSerial(SW_SERIAL_RX_PIN, SW_SERIAL_TX_PIN);
 
 void setup() {
     pinMode(SWITCH_FORWARD_PIN,  INPUT_PULLUP);
@@ -82,18 +88,18 @@ void setup() {
 }
 
 void loop() {
-    if (switch_forward.active()) {
+    if (switchForward.active()) {
         forward();
-    } else if (switch_reverse.active()) {
+    } else if (switchReverse.active()) {
         reverse();
-    } else if (button_seek.pressed()) {
+    } else if (buttonSeek.pressed()) {
         forward();
     } else {
         stop();
     }
 
-    if (button_mode.pressedOn()) {
-        change_mode();
+    if (buttonMode.pressedOn()) {
+        changeMode();
     }
 }
 
@@ -120,8 +126,8 @@ void stop() {
 #endif
 }
 
-void change_mode() {
-    // TODO
+void changeMode() {
+    swSerial.write(SW_SERIAL_MODE_MSG);
 #if DEBUG
     Serial.println("Change mode");
 #endif
