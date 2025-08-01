@@ -1,14 +1,14 @@
-#include <Wire.h>
 #include <Adafruit_TCS34725.h>
 #include <DFMiniMp3.h>
+#include <SoftwareSerial.h>
 
-#include "project.h"
+#include "common.h"
 
 #ifndef SENSOR_NO
 #   define SENSOR_NO 1  // 1–4
 #endif
 #ifndef DEBUG
-#   define DEBUG     2  // 0–2
+#   define DEBUG     1  // 0–2
 #endif
 
 #define COLOR_COUNT           7
@@ -20,6 +20,9 @@
 #define MP3_DEFAULT_VOLUME 30  // 0–30
 #define MP3_DEFAULT_FOLDER LOW_A
 
+#define SW_SERIAL_RX_PIN 4
+#define SW_SERIAL_TX_PIN 5
+
 #define WAIT_FOREVER() for (;;) delay(100)
 
 enum Folder : uint8_t {
@@ -27,7 +30,8 @@ enum Folder : uint8_t {
     HIGH_A,
     DRUMS,
     WORDS,
-    AMBIENCE
+    AMBIENCE,
+    _TOTAL_FOLDERS = AMBIENCE
 };
 
 enum Track : uint8_t {
@@ -37,7 +41,8 @@ enum Track : uint8_t {
     D,
     E,
     F_SHARP,
-    A
+    A,
+    _TOTAL_TRACKS = A
 };
 
 enum Color : uint16_t {
@@ -53,7 +58,7 @@ enum Color : uint16_t {
     PINK,
     LIGHTBLUE,
     WHITE,
-    _COUNT
+    _TOTAL_COLORS
 };
 
 uint16_t const COLOR_SAMPLES[COLOR_COUNT][5] = {
@@ -101,7 +106,9 @@ using DfMp3 = DFMiniMp3<HardwareSerial, Mp3Callbacks>;
 DfMp3 mp3(Serial1);
 
 Folder mp3Folder = MP3_DEFAULT_FOLDER;
-Track mp3TrackMap[Color::_COUNT];  // Color → track number
+Track  mp3TrackMap[Color::_TOTAL_COLORS];  // Color → track number
+
+SoftwareSerial swSerial(SW_SERIAL_RX_PIN, SW_SERIAL_TX_PIN);
 
 void setup() {
     mp3TrackMap[Color::RED]    = Track::C_MAJOR;
@@ -132,7 +139,7 @@ void setup() {
 }
 
 void loop() {
-    static Color prevColor = Color::NONE;
+    static Color lastColor = Color::NONE;
     //static Color playColor = Color::NONE;
     //static uint8_t hysteresisCnt = 0;
 
@@ -154,24 +161,31 @@ void loop() {
 
     Color color = identifyColor(r, g, b, c);
     if (color == Color::NONE) {
-        prevColor = Color::NONE;
+        lastColor = Color::NONE;
         //playColor = Color::NONE;
         //hysteresisCnt = 0;
         return;
     }
 #if DEBUG
-    Serial.print("[TCS] Identified color: "); Serial.println(color);
+    Serial.print("[TCS] Identified color "); Serial.println(color);
 #endif
 
-    //if (color != prevColor) {
+    if (shouldChangeMode()) {
+        mp3Folder = mp3Folder % Folder::_TOTAL_FOLDERS + 1;
+#if DEBUG
+        Serial.print("[MP3] Changed to folder "); Serial.println(mp3Folder);
+#endif
+    }
+
+    //if (color != lastColor) {
     //    hysteresisCnt = 1;
     //} else if (++hysteresisCnt >= COLOR_HYSTERESIS && color != playColor) {
     //    playTrackFor(playColor = color);
     //}
-    if (color != prevColor) {
+    if (color != lastColor) {
         playTrackFor(color);
     }
-    prevColor = color;
+    lastColor = color;
 }
 
 Color identifyColor(uint16_t r, uint16_t g, uint16_t b, uint16_t c) {
@@ -226,14 +240,17 @@ uint16_t colorDistance(
     return sqrt(pow(rDiff, 2) + pow(gDiff, 2) + pow(bDiff, 2));
 }
 
+bool shouldChangeMode() {
+    return swSerial.available() && swSerial.read() == SW_SERIAL_MODE_MSG;
+}
+
 void playTrackFor(Color color) {
-    Folder folder = mp3Folder;
-    Track  track  = mp3TrackMap[color];
+    Track track = mp3TrackMap[color];
 #if DEBUG
-    Serial.print("[MP3] Playing track: "); Serial.print(folder);
-    Serial.print("/"); Serial.print(track); Serial.println("...");
+    Serial.print("[MP3] Playing track "); Serial.print(mp3Folder);
+    Serial.print("/"); Serial.println(track);
 #endif
-    mp3.playFolderTrack(folder, track);
+    mp3.playFolderTrack(mp3Folder, track);
 }
 
 class Mp3Callbacks {
@@ -245,7 +262,7 @@ public:
 
     static void OnPlayFinished(DfMp3& mp3, DfMp3_PlaySources source, uint16_t track) {
 #if DEBUG
-        Serial.print("[MP3] Finished playing #"); Serial.println(track);
+        Serial.print("[MP3] Finished playing "); Serial.println(track);
 #endif
     }
 
