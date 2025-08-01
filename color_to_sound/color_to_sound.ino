@@ -2,8 +2,12 @@
 #include <Adafruit_TCS34725.h>
 #include <DFMiniMp3.h>
 
-#define DEBUG          2
-#define WAIT_FOREVER() for (;;) delay(100)
+#ifndef SENSOR_NO
+#   define SENSOR_NO 1  // 1–4
+#endif
+#ifndef DEBUG
+#   define DEBUG     2  // 0–2
+#endif
 
 #define COLOR_COUNT           7
 #define COLOR_C_THRESHOLD     160
@@ -13,13 +17,18 @@
 
 #define MP3_FOLDER    1   // 01 – low A, 02 – high A
 #define MP3_VOLUME    30  // 0–30
-#define TRACK_C_MAJOR 1
-#define TRACK_D_MAJOR 2
-#define TRACK_G_MAJOR 3
-#define TRACK_D       4
-#define TRACK_E       5
-#define TRACK_F_SHARP 6
-#define TRACK_A       7
+
+#define WAIT_FOREVER() for (;;) delay(100)
+
+enum Track : uint8_t {
+    C_MAJOR = 1,
+    D_MAJOR,
+    G_MAJOR,
+    D,
+    E,
+    F_SHARP,
+    A,
+};
 
 enum Color : uint16_t {
     NONE      = UINT16_MAX,
@@ -38,7 +47,7 @@ enum Color : uint16_t {
 };
 
 uint16_t const COLOR_SAMPLES[COLOR_COUNT][5] = {
-    // Sensor 1
+#if SENSOR_NO == 1
     { Color::RED,    153, 52,  39,  242 },
     { Color::GREEN,  77,  118, 67,  264 },
     { Color::BLUE,   49,  78,  102, 227 },
@@ -46,33 +55,33 @@ uint16_t const COLOR_SAMPLES[COLOR_COUNT][5] = {
     { Color::CYAN,   136, 261, 197, 616 },
     { Color::ORANGE, 371, 124, 78,  580 },
     { Color::PINK,   380, 306, 253, 985 },
-
-    // // Sensor 2
-    // { Color::RED,    233, 84,  60,  359 },
-    // { Color::GREEN,  128, 166, 93,  384 },
-    // { Color::BLUE,   83,  104, 119, 296 },
-    // { Color::YELLOW, 607, 397, 173, 1213 },
-    // { Color::CYAN,   182, 272, 194, 650 },
-    // { Color::ORANGE, 500, 175, 110, 766 },
-    // { Color::PINK,   512, 388, 305, 1216 },
-
-    // // Sensor 3
-    // { Color::RED,    150, 63,  49,  250 },
-    // { Color::GREEN,  72,  128, 73,  271 },
-    // { Color::BLUE,   41,  74,  91,  200 },
-    // { Color::YELLOW, 343, 250, 112, 718 },
-    // { Color::CYAN,   117, 235, 180, 528 },
-    // { Color::ORANGE, 336, 125, 84,  529 },
-    // { Color::PINK,   360, 315, 262, 938 },
-
-    // // Sensor 4
-    // { Color::RED,    222, 73,  47,  351 },
-    // { Color::GREEN,  111, 136, 69,  335 },
-    // { Color::BLUE,   78,  89,  98,  278 },
-    // { Color::YELLOW, 539, 303, 117, 1034 },
-    // { Color::CYAN,   164, 244, 171, 615 },
-    // { Color::ORANGE, 490, 150, 90,  755 },
-    // { Color::PINK,   477, 328, 253, 1123 },
+#elif SENSOR_NO == 2
+    { Color::RED,    233, 84,  60,  359 },
+    { Color::GREEN,  128, 166, 93,  384 },
+    { Color::BLUE,   83,  104, 119, 296 },
+    { Color::YELLOW, 607, 397, 173, 1213 },
+    { Color::CYAN,   182, 272, 194, 650 },
+    { Color::ORANGE, 500, 175, 110, 766 },
+    { Color::PINK,   512, 388, 305, 1216 },
+#elif SENSOR_NO == 3
+    { Color::RED,    150, 63,  49,  250 },
+    { Color::GREEN,  72,  128, 73,  271 },
+    { Color::BLUE,   41,  74,  91,  200 },
+    { Color::YELLOW, 343, 250, 112, 718 },
+    { Color::CYAN,   117, 235, 180, 528 },
+    { Color::ORANGE, 336, 125, 84,  529 },
+    { Color::PINK,   360, 315, 262, 938 },
+#elif SENSOR_NO == 4
+    { Color::RED,    222, 73,  47,  351 },
+    { Color::GREEN,  111, 136, 69,  335 },
+    { Color::BLUE,   78,  89,  98,  278 },
+    { Color::YELLOW, 539, 303, 117, 1034 },
+    { Color::CYAN,   164, 244, 171, 615 },
+    { Color::ORANGE, 490, 150, 90,  755 },
+    { Color::PINK,   477, 328, 253, 1123 },
+#else
+#   error "Invalid SENSOR_NO"
+#endif
 };
 
 Adafruit_TCS34725 tcs(TCS34725_INTEGRATIONTIME_101MS, TCS34725_GAIN_4X);
@@ -81,16 +90,16 @@ class Mp3Callbacks;
 using DfMp3 = DFMiniMp3<HardwareSerial, Mp3Callbacks>;
 DfMp3 mp3(Serial1);
 
-uint8_t mp3TrackMap[Color::_COUNT];  // Color → track number
+Track mp3TrackMap[Color::_COUNT];  // Color → track number
 
 void setup() {
-    mp3TrackMap[Color::RED]    = TRACK_C_MAJOR;
-    mp3TrackMap[Color::GREEN]  = TRACK_G_MAJOR;
-    mp3TrackMap[Color::BLUE]   = TRACK_D_MAJOR;
-    mp3TrackMap[Color::YELLOW] = TRACK_E;
-    mp3TrackMap[Color::CYAN]   = TRACK_F_SHARP;
-    mp3TrackMap[Color::ORANGE] = TRACK_D;
-    mp3TrackMap[Color::PINK]   = TRACK_A;
+    mp3TrackMap[Color::RED]    = Track::C_MAJOR;
+    mp3TrackMap[Color::GREEN]  = Track::G_MAJOR;
+    mp3TrackMap[Color::BLUE]   = Track::D_MAJOR;
+    mp3TrackMap[Color::YELLOW] = Track::E;
+    mp3TrackMap[Color::CYAN]   = Track::F_SHARP;
+    mp3TrackMap[Color::ORANGE] = Track::D;
+    mp3TrackMap[Color::PINK]   = Track::A;
 
     Serial.begin(115200);
 
@@ -207,7 +216,7 @@ uint16_t colorDistance(
 }
 
 void playTrackFor(Color color) {
-    uint8_t track = mp3TrackMap[color];
+    Track track = mp3TrackMap[color];
 #if DEBUG
     Serial.print("[MP3] Playing track #"); Serial.print(track); Serial.println("...");
 #endif
