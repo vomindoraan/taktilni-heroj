@@ -85,6 +85,7 @@ void setup() {
     pinMode(MOTOR_DIRECTION_PIN, OUTPUT);
 
     Serial.begin(SERIAL_BAUD_RATE);
+    swSerial.begin(SW_SERIAL_BAUD_RATE);
 }
 
 void loop() {

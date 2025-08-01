@@ -120,6 +120,7 @@ void setup() {
     mp3TrackMap[Color::PINK]   = Track::A;
 
     Serial.begin(SERIAL_BAUD_RATE);
+    swSerial.begin(SW_SERIAL_BAUD_RATE);
 
     if (!tcs.begin()) {
         Serial.println("[TCS] No sensor found");
@@ -171,7 +172,7 @@ void loop() {
 #endif
 
     if (shouldChangeMode()) {
-        mp3Folder = mp3Folder % Folder::_TOTAL_FOLDERS + 1;
+        mp3Folder = Folder(mp3Folder % Folder::_TOTAL_FOLDERS + 1);
 #if DEBUG
         Serial.print("[MP3] Changed to folder "); Serial.println(mp3Folder);
 #endif
