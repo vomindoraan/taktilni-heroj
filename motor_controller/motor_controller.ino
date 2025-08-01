@@ -1,3 +1,5 @@
+#include "project.h"
+
 #ifndef DEBUG
 #   define DEBUG 1
 #endif
@@ -76,7 +78,7 @@ void setup() {
     pinMode(MOTOR_POWER_PIN,     OUTPUT);
     pinMode(MOTOR_DIRECTION_PIN, OUTPUT);
 
-    Serial.begin(115200);
+    Serial.begin(SERIAL_BAUD_RATE);
 }
 
 void loop() {

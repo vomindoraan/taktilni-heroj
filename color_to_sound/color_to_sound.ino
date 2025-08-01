@@ -2,6 +2,8 @@
 #include <Adafruit_TCS34725.h>
 #include <DFMiniMp3.h>
 
+#include "project.h"
+
 #ifndef SENSOR_NO
 #   define SENSOR_NO 1  // 1–4
 #endif
@@ -13,12 +15,20 @@
 #define COLOR_C_THRESHOLD     160
 #define COLOR_DIST_THRESHOLD  15
 #define COLOR_CDIST_THRESHOLD 100
-// #define COLOR_HYSTERESIS      2
+//#define COLOR_HYSTERESIS      2
 
-#define MP3_FOLDER    1   // 01 – low A, 02 – high A
-#define MP3_VOLUME    30  // 0–30
+#define MP3_DEFAULT_VOLUME 30  // 0–30
+#define MP3_DEFAULT_FOLDER LOW_A
 
 #define WAIT_FOREVER() for (;;) delay(100)
+
+enum Folder : uint8_t {
+    LOW_A = 1,
+    HIGH_A,
+    DRUMS,
+    WORDS,
+    AMBIENCE
+};
 
 enum Track : uint8_t {
     C_MAJOR = 1,
@@ -27,22 +37,22 @@ enum Track : uint8_t {
     D,
     E,
     F_SHARP,
-    A,
+    A
 };
 
 enum Color : uint16_t {
-    NONE      = UINT16_MAX,
-    BLACK     = 0,
-    RED       = 1,
-    GREEN     = 2,
-    BLUE      = 3,
-    YELLOW    = 4,
-    PURPLE    = 5,
-    CYAN      = 6,
-    ORANGE    = 7,
-    PINK      = 8,
-    LIGHTBLUE = 9,
-    WHITE     = 10,
+    NONE  = UINT16_MAX,
+    BLACK = 0,
+    RED,
+    GREEN,
+    BLUE,
+    YELLOW,
+    PURPLE,
+    CYAN,
+    ORANGE,
+    PINK,
+    LIGHTBLUE,
+    WHITE,
     _COUNT
 };
 
@@ -90,6 +100,7 @@ class Mp3Callbacks;
 using DfMp3 = DFMiniMp3<HardwareSerial, Mp3Callbacks>;
 DfMp3 mp3(Serial1);
 
+Folder mp3Folder = MP3_DEFAULT_FOLDER;
 Track mp3TrackMap[Color::_COUNT];  // Color → track number
 
 void setup() {
@@ -101,7 +112,7 @@ void setup() {
     mp3TrackMap[Color::ORANGE] = Track::D;
     mp3TrackMap[Color::PINK]   = Track::A;
 
-    Serial.begin(115200);
+    Serial.begin(SERIAL_BAUD_RATE);
 
     if (!tcs.begin()) {
         Serial.println("[TCS] No sensor found");
@@ -117,24 +128,24 @@ void setup() {
 #if DEBUG
     mp3.reset();
 #endif
-    mp3.setVolume(MP3_VOLUME);
+    mp3.setVolume(MP3_DEFAULT_VOLUME);
 }
 
 void loop() {
     static Color prevColor = Color::NONE;
-    // static Color playColor = Color::NONE;
-    // static uint8_t hysteresisCnt = 0;
+    //static Color playColor = Color::NONE;
+    //static uint8_t hysteresisCnt = 0;
 
     uint16_t r, g, b, c;
     tcs.getRawData(&r, &g, &b, &c);
 
 #if DEBUG >= 2
-    // uint16_t temp = tcs.calculateColorTemperature_dn40(r, g, b, c);
-    // uint16_t lux = tcs.calculateLux(r, g, b);
+    //uint16_t temp = tcs.calculateColorTemperature_dn40(r, g, b, c);
+    //uint16_t lux = tcs.calculateLux(r, g, b);
 
     Serial.print("[TCS] ");
-    // Serial.print("Temp: "); Serial.print(temp); Serial.print("K - ");
-    // Serial.print("Lux: "); Serial.print(lux); Serial.print(" - ");
+    //Serial.print("Temp: "); Serial.print(temp); Serial.print("K - ");
+    //Serial.print("Lux: "); Serial.print(lux); Serial.print(" - ");
     Serial.print("R: "); Serial.print(r); Serial.print(", ");
     Serial.print("G: "); Serial.print(g); Serial.print(", ");
     Serial.print("B: "); Serial.print(b); Serial.print(", ");
@@ -144,19 +155,19 @@ void loop() {
     Color color = identifyColor(r, g, b, c);
     if (color == Color::NONE) {
         prevColor = Color::NONE;
-        // playColor = Color::NONE;
-        // hysteresisCnt = 0;
+        //playColor = Color::NONE;
+        //hysteresisCnt = 0;
         return;
     }
 #if DEBUG
     Serial.print("[TCS] Identified color: "); Serial.println(color);
 #endif
 
-    // if (color != prevColor) {
-    //     hysteresisCnt = 1;
-    // } else if (++hysteresisCnt >= COLOR_HYSTERESIS && color != playColor) {
-    //     playTrackFor(playColor = color);
-    // }
+    //if (color != prevColor) {
+    //    hysteresisCnt = 1;
+    //} else if (++hysteresisCnt >= COLOR_HYSTERESIS && color != playColor) {
+    //    playTrackFor(playColor = color);
+    //}
     if (color != prevColor) {
         playTrackFor(color);
     }
@@ -216,11 +227,13 @@ uint16_t colorDistance(
 }
 
 void playTrackFor(Color color) {
-    Track track = mp3TrackMap[color];
+    Folder folder = mp3Folder;
+    Track  track  = mp3TrackMap[color];
 #if DEBUG
-    Serial.print("[MP3] Playing track #"); Serial.print(track); Serial.println("...");
+    Serial.print("[MP3] Playing track: "); Serial.print(folder);
+    Serial.print("/"); Serial.print(track); Serial.println("...");
 #endif
-    mp3.playFolderTrack(MP3_FOLDER, track);
+    mp3.playFolderTrack(folder, track);
 }
 
 class Mp3Callbacks {
