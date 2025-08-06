@@ -20,17 +20,17 @@
 #define MP3_SERIAL_RX_PIN  5
 #define MP3_SERIAL_TX_PIN  4
 #define MP3_DEFAULT_VOLUME 30  // 0–30
-#define MP3_DEFAULT_FOLDER LOW_A
+#define MP3_DEFAULT_FOLDER TONES
 
 #define WAIT_FOREVER() for (;;) delay(100)
 
 enum Folder : uint8_t {
-    LOW_A = 1,
-    HIGH_A,
+    TONES = 1,
     DRUMS,
     WORDS,
     AMBIENCE,
-    _TOTAL_FOLDERS = AMBIENCE
+    MIXED,
+    _TOTAL_FOLDERS = MIXED
 };
 
 enum Track : uint8_t {
@@ -244,12 +244,16 @@ bool shouldChangeMode() {
 }
 
 void playTrackFor(Color color) {
+    Folder folder = mp3Folder;
+    if (folder == MIXED) {
+        folder = Folder(SENSOR_NO);
+    }
     Track track = mp3TrackMap[color];
 #if DEBUG
-    Serial.print("[MP3] Playing track "); Serial.print(mp3Folder);
+    Serial.print("[MP3] Playing track "); Serial.print(folder);
     Serial.print("/"); Serial.println(track);
 #endif
-    mp3.playFolderTrack(mp3Folder, track);
+    mp3.playFolderTrack(folder, track);
 }
 
 class Mp3Callbacks {
