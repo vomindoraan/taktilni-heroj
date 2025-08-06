@@ -25,7 +25,7 @@ public:
         activeState{activeState}
     {}
 
-    bool active() {
+    bool active() const {
         return digitalRead(pin) == activeState;
     }
 };
@@ -65,6 +65,10 @@ public:
 
     bool pressedOn() {
         return state != activeState && pressed();
+    }
+
+    bool pressedOff() {
+        return state == activeState && !pressed();
     }
 };
 
