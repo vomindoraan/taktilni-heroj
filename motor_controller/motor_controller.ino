@@ -1,9 +1,10 @@
-#include <SoftwareSerial.h>
-
 #include "common.h"
 
 #ifndef DEBUG
-#   define DEBUG 1
+#   define DEBUG 0
+#endif
+#if DEBUG
+#   warning "Serial debug may interfere with commands sent to other devices"
 #endif
 
 #define SWITCH_FORWARD_PIN  9
@@ -12,8 +13,6 @@
 #define BUTTON_MODE_PIN     15
 #define MOTOR_POWER_PIN     21
 #define MOTOR_DIRECTION_PIN 20
-#define SW_SERIAL_RX_PIN    5
-#define SW_SERIAL_TX_PIN    4
 
 class Switch {
 protected:
@@ -74,8 +73,6 @@ Switch switchReverse = {SWITCH_REVERSE_PIN, LOW};
 Button buttonSeek    = {BUTTON_SEEK_PIN,    LOW};
 Button buttonMode    = {BUTTON_MODE_PIN,    LOW};
 
-SoftwareSerial swSerial{SW_SERIAL_RX_PIN, SW_SERIAL_TX_PIN};
-
 void setup() {
     pinMode(SWITCH_FORWARD_PIN,  INPUT_PULLUP);
     pinMode(SWITCH_REVERSE_PIN,  INPUT_PULLUP);
@@ -85,7 +82,6 @@ void setup() {
     pinMode(MOTOR_DIRECTION_PIN, OUTPUT);
 
     Serial.begin(SERIAL_BAUD_RATE);
-    swSerial.begin(SW_SERIAL_BAUD_RATE);
 }
 
 void loop() {
@@ -128,7 +124,7 @@ void stop() {
 }
 
 void changeMode() {
-    swSerial.write(SW_SERIAL_MODE_MSG);
+    Serial.write(CHANGE_MODE_CMD);
 #if DEBUG
     Serial.println("Change mode");
 #endif

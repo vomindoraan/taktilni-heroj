@@ -17,11 +17,10 @@
 #define COLOR_CDIST_THRESHOLD 100
 //#define COLOR_HYSTERESIS      2
 
+#define MP3_SERIAL_RX_PIN  5
+#define MP3_SERIAL_TX_PIN  4
 #define MP3_DEFAULT_VOLUME 30  // 0–30
 #define MP3_DEFAULT_FOLDER LOW_A
-
-#define SW_SERIAL_RX_PIN 4
-#define SW_SERIAL_TX_PIN 5
 
 #define WAIT_FOREVER() for (;;) delay(100)
 
@@ -101,14 +100,14 @@ uint16_t const COLOR_SAMPLES[COLOR_COUNT][5] = {
 
 Adafruit_TCS34725 tcs{TCS34725_INTEGRATIONTIME_101MS, TCS34725_GAIN_4X};
 
+SoftwareSerial mp3Serial{MP3_SERIAL_RX_PIN, MP3_SERIAL_TX_PIN};
+
 class Mp3Callbacks;
-using DfMp3 = DFMiniMp3<HardwareSerial, Mp3Callbacks>;
-DfMp3 mp3{Serial1};
+using DfMp3 = DFMiniMp3<SoftwareSerial, Mp3Callbacks>;
+DfMp3 mp3{mp3Serial};
 
 Folder mp3Folder = MP3_DEFAULT_FOLDER;
 Track  mp3TrackMap[Color::_TOTAL_COLORS];  // Color → track number
-
-SoftwareSerial swSerial{SW_SERIAL_RX_PIN, SW_SERIAL_TX_PIN};
 
 void setup() {
     mp3TrackMap[Color::RED]    = Track::C_MAJOR;
@@ -120,7 +119,12 @@ void setup() {
     mp3TrackMap[Color::PINK]   = Track::A;
 
     Serial.begin(SERIAL_BAUD_RATE);
-    swSerial.begin(SW_SERIAL_BAUD_RATE);
+
+    mp3.begin(SW_SERIAL_BAUD_RATE);
+#if DEBUG
+    mp3.reset();
+#endif
+    mp3.setVolume(MP3_DEFAULT_VOLUME);
 
     if (!tcs.begin()) {
         Serial.println("[TCS] No sensor found");
@@ -131,12 +135,6 @@ void setup() {
         Serial.println("[TCS] Sensor connected");
     }
 #endif
-
-    mp3.begin();
-#if DEBUG
-    mp3.reset();
-#endif
-    mp3.setVolume(MP3_DEFAULT_VOLUME);
 }
 
 void loop() {
@@ -242,7 +240,7 @@ uint16_t colorDistance(
 }
 
 bool shouldChangeMode() {
-    return swSerial.available() && swSerial.read() == SW_SERIAL_MODE_MSG;
+    return Serial.available() && Serial.read() == CHANGE_MODE_CMD;
 }
 
 void playTrackFor(Color color) {
