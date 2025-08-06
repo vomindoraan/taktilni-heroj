@@ -74,7 +74,7 @@ Switch switchReverse = {SWITCH_REVERSE_PIN, LOW};
 Button buttonSeek    = {BUTTON_SEEK_PIN,    LOW};
 Button buttonMode    = {BUTTON_MODE_PIN,    LOW};
 
-SoftwareSerial swSerial(SW_SERIAL_RX_PIN, SW_SERIAL_TX_PIN);
+SoftwareSerial swSerial{SW_SERIAL_RX_PIN, SW_SERIAL_TX_PIN};
 
 void setup() {
     pinMode(SWITCH_FORWARD_PIN,  INPUT_PULLUP);

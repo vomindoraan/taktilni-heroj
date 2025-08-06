@@ -99,16 +99,16 @@ uint16_t const COLOR_SAMPLES[COLOR_COUNT][5] = {
 #endif
 };
 
-Adafruit_TCS34725 tcs(TCS34725_INTEGRATIONTIME_101MS, TCS34725_GAIN_4X);
+Adafruit_TCS34725 tcs{TCS34725_INTEGRATIONTIME_101MS, TCS34725_GAIN_4X};
 
 class Mp3Callbacks;
 using DfMp3 = DFMiniMp3<HardwareSerial, Mp3Callbacks>;
-DfMp3 mp3(Serial1);
+DfMp3 mp3{Serial1};
 
 Folder mp3Folder = MP3_DEFAULT_FOLDER;
 Track  mp3TrackMap[Color::_TOTAL_COLORS];  // Color → track number
 
-SoftwareSerial swSerial(SW_SERIAL_RX_PIN, SW_SERIAL_TX_PIN);
+SoftwareSerial swSerial{SW_SERIAL_RX_PIN, SW_SERIAL_TX_PIN};
 
 void setup() {
     mp3TrackMap[Color::RED]    = Track::C_MAJOR;
