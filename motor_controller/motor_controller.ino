@@ -52,15 +52,11 @@ public:
         if (reading != lastState) {
             lastDebounceTime = currentTime;
         }
-        bool pressed = false;
         if (currentTime - lastDebounceTime > debounceDelay && reading != state) {
             state = reading;
-            if (state == activeState) {
-                pressed = true;
-            }
         }
         lastState = reading;
-        return pressed;
+        return state == activeState;
     }
 
     bool pressedOn() {
