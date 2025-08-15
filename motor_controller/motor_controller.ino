@@ -15,11 +15,10 @@
 #define MOTOR_DIRECTION_PIN 20
 
 class Switch {
-protected:
-    int  pin;
-    bool activeState;
-
 public:
+    int const  pin;
+    bool const activeState;
+
     Switch(int pin, bool activeState = LOW) :
         pin{pin},
         activeState{activeState}
