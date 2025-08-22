@@ -9,8 +9,13 @@
 
 #define SWITCH_FORWARD_PIN  9
 #define SWITCH_REVERSE_PIN  8
-#define BUTTON_SEEK_PIN     16
-#define BUTTON_MODE_PIN     15
+#define BUTTON_FORWARD_PIN  16
+#define BUTTON_REVERSE_PIN  15
+#define SELECTOR_MODE1_PIN  2
+#define SELECTOR_MODE2_PIN  3
+#define SELECTOR_MODE3_PIN  4
+#define SELECTOR_MODE4_PIN  5
+#define SELECTOR_MODE5_PIN  6
 #define MOTOR_POWER_PIN     21
 #define MOTOR_DIRECTION_PIN 20
 
@@ -69,16 +74,27 @@ public:
 
 Switch switchForward = {SWITCH_FORWARD_PIN, LOW};
 Switch switchReverse = {SWITCH_REVERSE_PIN, LOW};
-Button buttonSeek    = {BUTTON_SEEK_PIN,    LOW};
-Button buttonMode    = {BUTTON_MODE_PIN,    LOW};
+Button buttonForward = {BUTTON_FORWARD_PIN, LOW};
+Button buttonReverse = {BUTTON_REVERSE_PIN, LOW};
+
+Button selectorMode[] = {
+    {SELECTOR_MODE1_PIN, LOW},
+    {SELECTOR_MODE2_PIN, LOW},
+    {SELECTOR_MODE3_PIN, LOW},
+    {SELECTOR_MODE4_PIN, LOW},
+    {SELECTOR_MODE5_PIN, LOW},
+};
 
 void setup() {
     pinMode(SWITCH_FORWARD_PIN,  INPUT_PULLUP);
     pinMode(SWITCH_REVERSE_PIN,  INPUT_PULLUP);
-    pinMode(BUTTON_SEEK_PIN,     INPUT);
-    pinMode(BUTTON_MODE_PIN,     INPUT);
+    pinMode(BUTTON_FORWARD_PIN,  INPUT);
+    pinMode(BUTTON_REVERSE_PIN,  INPUT);
     pinMode(MOTOR_POWER_PIN,     OUTPUT);
     pinMode(MOTOR_DIRECTION_PIN, OUTPUT);
+    for (auto& s : selectorMode) {
+        pinMode(s.pin, INPUT_PULLUP);
+    }
 
     Serial.begin(SERIAL_BAUD_RATE);
 }
@@ -88,14 +104,19 @@ void loop() {
         forward();
     } else if (switchReverse.active()) {
         reverse();
-    } else if (buttonSeek.pressed()) {
+    } else if (buttonForward.pressed()) {
         forward();
+    } else if (buttonReverse.pressed()) {
+        reverse();
     } else {
         stop();
     }
 
-    if (buttonMode.pressedOn()) {
-        changeMode();
+    for (int i = 0; i < sizeof selectorMode / sizeof *selectorMode; i++) {
+        if (selectorMode[i].pressedOn()) {
+            changeMode(i + 1);
+            break;
+        }
     }
 }
 
@@ -122,9 +143,10 @@ void stop() {
 #endif
 }
 
-void changeMode() {
+void changeMode(int mode) {
     Serial.write(CHANGE_MODE_CMD);
+    Serial.print(mode);
 #if DEBUG
-    Serial.println("Change mode");
+    Serial.println(" - Change mode");
 #endif
 }

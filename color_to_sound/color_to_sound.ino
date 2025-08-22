@@ -169,8 +169,9 @@ void loop() {
     Serial.print("[TCS] Identified color "); Serial.println(color);
 #endif
 
-    if (shouldChangeMode()) {
-        mp3Folder = Folder(mp3Folder % Folder::_TOTAL_FOLDERS + 1);
+    int mode = checkChangeMode();
+    if (mode > 0 && mode <= Folder::_TOTAL_FOLDERS) {
+        mp3Folder = Folder(mode);
 #if DEBUG
         Serial.print("[MP3] Changed to folder "); Serial.println(mp3Folder);
 #endif
@@ -239,8 +240,11 @@ uint16_t colorDistance(
     return sqrt(pow(rDiff, 2) + pow(gDiff, 2) + pow(bDiff, 2));
 }
 
-bool shouldChangeMode() {
-    return Serial.available() && Serial.read() == CHANGE_MODE_CMD;
+int checkChangeMode() {
+    if (Serial.available() && Serial.read() == CHANGE_MODE_CMD && Serial.available()) {
+        return Serial.parseInt(SKIP_NONE);
+    }
+    return 0;
 }
 
 void playTrackFor(Color color) {
