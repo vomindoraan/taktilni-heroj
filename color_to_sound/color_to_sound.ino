@@ -241,10 +241,13 @@ uint16_t colorDistance(
 }
 
 int checkChangeMode() {
-    if (Serial.available() && Serial.read() == CHANGE_MODE_CMD && Serial.available()) {
-        return Serial.parseInt(SKIP_NONE);
+    int mode = 0;
+    // Consume consecutive commands, keep latest (format: /M[1-5]/)
+    while (Serial.available() && Serial.peek() == CHANGE_MODE_CMD) {
+        Serial.read();
+        mode = Serial.parseInt(SKIP_NONE);
     }
-    return 0;
+    return mode;
 }
 
 void playTrackFor(Color color) {
