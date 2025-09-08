@@ -15,7 +15,8 @@
 #define SELECTOR_MODE2_PIN  3
 #define SELECTOR_MODE3_PIN  4
 #define SELECTOR_MODE4_PIN  5
-#define SELECTOR_MODE5_PIN  6
+#define SELECTOR_MODE5_PIN  6  // TODO: NC until we get a 6-way switch
+#define SELECTOR_MODE6_PIN  7
 #define MOTOR_POWER_PIN     21
 #define MOTOR_DIRECTION_PIN 20
 
@@ -83,6 +84,7 @@ Button selectorMode[] = {
     {SELECTOR_MODE3_PIN, LOW},
     {SELECTOR_MODE4_PIN, LOW},
     {SELECTOR_MODE5_PIN, LOW},
+    {SELECTOR_MODE6_PIN, LOW},
 };
 
 void setup() {

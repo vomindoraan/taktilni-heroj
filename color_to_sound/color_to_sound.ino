@@ -29,7 +29,8 @@ enum Folder : uint8_t {
     DRUMS,
     WORDS,
     AMBIENCE,
-    MIXED,
+    WILDLIFE,
+    MIXED,  // Mix of 1–4, one folder per sensor
     _TOTAL_FOLDERS = MIXED
 };
 
