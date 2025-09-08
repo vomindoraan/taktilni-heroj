@@ -80,7 +80,7 @@ Switch switchReverse = {SWITCH_REVERSE_PIN, LOW};
 Button buttonForward = {BUTTON_FORWARD_PIN, LOW};
 Button buttonReverse = {BUTTON_REVERSE_PIN, LOW};
 
-Button selectorMode[] = {
+Button selector[] = {
     {SELECTOR_MODE1_PIN, LOW},
     {SELECTOR_MODE2_PIN, LOW},
     {SELECTOR_MODE3_PIN, LOW},
@@ -96,15 +96,15 @@ void setup() {
     pinMode(BUTTON_REVERSE_PIN,  INPUT);
     pinMode(MOTOR_POWER_PIN,     OUTPUT);
     pinMode(MOTOR_DIRECTION_PIN, OUTPUT);
-    for (auto& s : selectorMode) {
+    for (auto& s : selector) {
         pinMode(s.pin, INPUT_PULLUP);
     }
 
     Serial.begin(SERIAL_BAUD_RATE);
 
     // Set starting mode to current selector position
-    for (int i = 0; i < ARRAY_LEN(selectorMode); i++) {
-        if (selectorMode[i].active()) {
+    for (int i = 0; i < ARRAY_LEN(selector); i++) {
+        if (selector[i].active()) {
             changeMode(i + 1);
             break;
         }
@@ -125,8 +125,8 @@ void loop() {
     }
 
     // Check selector for mode changes
-    for (int i = 0; i < ARRAY_LEN(selectorMode); i++) {
-        if (selectorMode[i].pressedOn()) {
+    for (int i = 0; i < ARRAY_LEN(selector); i++) {
+        if (selector[i].pressedOn()) {
             changeMode(i + 1);
             break;
         }
