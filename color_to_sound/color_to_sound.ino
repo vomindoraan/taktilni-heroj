@@ -200,7 +200,7 @@ Color identifyColor(uint16_t r, uint16_t g, uint16_t b, uint16_t c) {
 #if DEBUG >= 2
     Serial.print("[TCS] Distances: ");
 #endif
-    for (int16_t i = 0; i < COLOR_COUNT; i++) {
+    for (int i = 0; i < COLOR_COUNT; i++) {
         auto [color, rSample, gSample, bSample, cSample] = COLOR_SAMPLES[i];
         uint16_t dist = colorDistance(r, g, b, c, rSample, gSample, bSample, cSample);
         uint16_t cDist = abs(int16_t(c) - int16_t(cSample));
@@ -210,7 +210,7 @@ Color identifyColor(uint16_t r, uint16_t g, uint16_t b, uint16_t c) {
 #endif
         if (
             dist < COLOR_DIST_THRESHOLD && cDist < COLOR_CDIST_THRESHOLD &&
-            dist < bestMatchDist && cDist < bestMatchCDist
+            dist < bestMatchDist        && cDist < bestMatchCDist
         ) {
             bestMatch = Color(color);
             bestMatchDist = dist;
@@ -241,7 +241,7 @@ uint16_t colorDistance(
 
 int checkChangeMode() {
     int mode = 0;
-    // Consume consecutive commands, keep latest (format: /M[1-5]/)
+    // Consume consecutive commands, keep latest (format: "M%d")
     while (Serial.available() && Serial.peek() == CHANGE_MODE_CMD) {
         Serial.read();
         mode = Serial.parseInt(SKIP_NONE);

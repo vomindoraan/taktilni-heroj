@@ -20,12 +20,14 @@
 #define MOTOR_POWER_PIN     21
 #define MOTOR_DIRECTION_PIN 20
 
+using time_t = unsigned long;
+
 class Switch {
 public:
-    int const  pin;
+    byte const pin;
     bool const activeState;
 
-    Switch(int pin, bool activeState = LOW) :
+    Switch(byte pin, bool activeState = LOW) :
         pin{pin},
         activeState{activeState}
     {}
@@ -37,13 +39,13 @@ public:
 
 class Button : public Switch {
 private:
-    bool          state;
-    bool          lastState;
-    unsigned long debounceDelay;
-    unsigned long lastDebounceTime;
+    bool   state;
+    bool   lastState;
+    time_t debounceDelay;
+    time_t lastDebounceTime;
 
 public:
-    Button(int pin, bool activeState = LOW, unsigned long debounceDelay = 50) :
+    Button(byte pin, bool activeState = LOW, time_t debounceDelay = 50) :
         Switch{pin, activeState},
         state{!activeState},
         lastState{!activeState},
@@ -53,7 +55,7 @@ public:
 
     bool pressed() {
         bool reading = digitalRead(pin);
-        auto currentTime = millis();
+        time_t currentTime = millis();
         if (reading != lastState) {
             lastDebounceTime = currentTime;
         }
