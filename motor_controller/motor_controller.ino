@@ -101,7 +101,7 @@ void setup() {
     Serial.begin(SERIAL_BAUD_RATE);
 
     // Set starting mode to current selector position
-    for (int i = 0; i < sizeof selectorMode / sizeof *selectorMode; i++) {
+    for (int i = 0; i < ARRAY_LEN(selectorMode); i++) {
         if (selectorMode[i].active()) {
             changeMode(i + 1);
             break;
@@ -123,7 +123,7 @@ void loop() {
     }
 
     // Check selector for mode changes
-    for (int i = 0; i < sizeof selectorMode / sizeof *selectorMode; i++) {
+    for (int i = 0; i < ARRAY_LEN(selectorMode); i++) {
         if (selectorMode[i].pressedOn()) {
             changeMode(i + 1);
             break;

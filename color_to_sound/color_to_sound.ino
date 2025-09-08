@@ -22,8 +22,6 @@
 #define MP3_DEFAULT_VOLUME 30  // 0–30
 #define MP3_DEFAULT_FOLDER TONES
 
-#define WAIT_FOREVER() for (;;) delay(100)
-
 enum Folder : uint8_t {
     TONES = 1,
     DRUMS,
