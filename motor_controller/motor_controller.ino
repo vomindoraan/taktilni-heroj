@@ -41,6 +41,7 @@ class Button : public Switch {
 private:
     bool   state;
     bool   lastState;
+    bool   wasPressed;
     time_t debounceDelay;
     time_t lastDebounceTime;
 
@@ -49,11 +50,13 @@ public:
         Switch{pin, activeState},
         state{!activeState},
         lastState{!activeState},
+        wasPressed{false},
         debounceDelay{debounceDelay},
         lastDebounceTime{0}
     {}
 
     bool pressed() {
+        wasPressed = state == activeState;
         bool reading = digitalRead(pin);
         time_t currentTime = millis();
         if (reading != lastState) {
@@ -67,11 +70,11 @@ public:
     }
 
     bool pressedOn() {
-        return state != activeState && pressed();
+        return pressed() && !wasPressed;
     }
 
     bool pressedOff() {
-        return state == activeState && !pressed();
+        return !pressed() && wasPressed;
     }
 };
 
