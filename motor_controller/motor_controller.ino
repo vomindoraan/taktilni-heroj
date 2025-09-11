@@ -1,7 +1,7 @@
 #include "common.h"
 
 #ifndef DEBUG
-#   define DEBUG 0
+#   define DEBUG 0  // 0–2
 #endif
 #if DEBUG
 #   warning "Serial debug may interfere with commands sent to other devices"
@@ -140,7 +140,7 @@ void loop() {
 void forward() {
     digitalWrite(MOTOR_POWER_PIN,     LOW);
     digitalWrite(MOTOR_DIRECTION_PIN, HIGH);
-#if DEBUG
+#if DEBUG >= 2
     Serial.println("Forward");
 #endif
 }
@@ -148,14 +148,14 @@ void forward() {
 void reverse() {
     digitalWrite(MOTOR_POWER_PIN,     LOW);
     digitalWrite(MOTOR_DIRECTION_PIN, LOW);
-#if DEBUG
+#if DEBUG >= 2
     Serial.println("Reverse");
 #endif
 }
 
 void stop() {
     digitalWrite(MOTOR_POWER_PIN, HIGH);
-#if DEBUG
+#if DEBUG >= 2
     Serial.println("Stop");
 #endif
 }

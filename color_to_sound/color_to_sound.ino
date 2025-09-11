@@ -133,7 +133,7 @@ void setup() {
     }
 #if DEBUG
     else {
-        Serial.println("[TCS] Sensor connected");
+        Serial.println("[TCS] Sensor " STR(SENSOR_NO) " online");
     }
 #endif
 }
@@ -259,7 +259,7 @@ void playTrackFor(Color color) {
     Track track = mp3TrackMap[color];
 #if DEBUG
     Serial.print("[MP3] Playing track "); Serial.print(folder);
-    Serial.print("/"); Serial.println(track);
+    Serial.print("\\"); Serial.println(track);
 #endif
     mp3.playFolderTrack(folder, track);
 }
