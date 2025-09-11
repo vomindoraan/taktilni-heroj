@@ -17,8 +17,8 @@
 #define COLOR_CDIST_THRESHOLD 100
 //#define COLOR_HYSTERESIS      2
 
-#define MP3_SERIAL_RX_PIN  5
-#define MP3_SERIAL_TX_PIN  4
+#define MP3_SERIAL_RX_PIN  9
+#define MP3_SERIAL_TX_PIN  8
 #define MP3_DEFAULT_VOLUME 30  // 0–30
 #define MP3_DEFAULT_FOLDER TONES
 
@@ -118,6 +118,8 @@ void setup() {
     mp3TrackMap[Color::PINK]   = Track::A;
 
     Serial.begin(SERIAL_BAUD_RATE);
+    mp3Serial.begin(SW_SERIAL_BAUD_RATE);
+    delay(SERIAL_BEGIN_DELAY);
 
     mp3.begin(SW_SERIAL_BAUD_RATE);
 #if DEBUG

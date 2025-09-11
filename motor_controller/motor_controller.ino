@@ -104,6 +104,7 @@ void setup() {
     }
 
     Serial.begin(SERIAL_BAUD_RATE);
+    delay(SERIAL_BEGIN_DELAY);
 
     // Set starting mode to current selector position
     for (int i = 0; i < ARRAY_LEN(selector); i++) {
