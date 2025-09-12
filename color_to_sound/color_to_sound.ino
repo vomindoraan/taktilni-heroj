@@ -242,8 +242,7 @@ uint16_t colorDistance(
 int checkChangeMode() {
     int mode = 0;
     // Consume consecutive commands, keep latest (format: "M%d")
-    while (Serial.available() && Serial.peek() == CHANGE_MODE_CMD) {
-        Serial.read();
+    while (Serial.available() && Serial.read() == CHANGE_MODE_CMD) {
         mode = Serial.parseInt(SKIP_NONE);
     }
     return mode;
