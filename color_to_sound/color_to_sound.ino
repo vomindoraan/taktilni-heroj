@@ -15,7 +15,6 @@
 #define COLOR_C_THRESHOLD     160
 #define COLOR_DIST_THRESHOLD  15
 #define COLOR_CDIST_THRESHOLD 100
-//#define COLOR_HYSTERESIS      2
 
 #define MP3_SERIAL_RX_PIN  9
 #define MP3_SERIAL_TX_PIN  8
@@ -140,8 +139,6 @@ void setup() {
 
 void loop() {
     static Color lastColor = Color::NONE;
-    //static Color playColor = Color::NONE;
-    //static uint8_t hysteresisCnt = 0;
 
     int mode = checkChangeMode();
     if (mode > 0 && mode <= Folder::_TOTAL_FOLDERS) {
@@ -153,12 +150,8 @@ void loop() {
 
     uint16_t r, g, b, c;
     tcs.getRawData(&r, &g, &b, &c);
-    //uint16_t temp = tcs.calculateColorTemperature_dn40(r, g, b, c);
-    //uint16_t lux = tcs.calculateLux(r, g, b);
 #if DEBUG >= 2
     Serial.print("[TCS] ");
-    //Serial.print("Temp: "); Serial.print(temp); Serial.print("K - ");
-    //Serial.print("Lux: "); Serial.print(lux); Serial.print(" - ");
     Serial.print("R: "); Serial.print(r); Serial.print(", ");
     Serial.print("G: "); Serial.print(g); Serial.print(", ");
     Serial.print("B: "); Serial.print(b); Serial.print(", ");
@@ -168,19 +161,12 @@ void loop() {
     Color color = identifyColor(r, g, b, c);
     if (color == Color::NONE) {
         lastColor = Color::NONE;
-        //playColor = Color::NONE;
-        //hysteresisCnt = 0;
         return;
     }
 #if DEBUG
     Serial.print("[TCS] Identified color "); Serial.println(color);
 #endif
 
-    //if (color != lastColor) {
-    //    hysteresisCnt = 1;
-    //} else if (++hysteresisCnt >= COLOR_HYSTERESIS && color != playColor) {
-    //    playTrackFor(playColor = color);
-    //}
     if (color != lastColor) {
         playTrackFor(color);
     }
