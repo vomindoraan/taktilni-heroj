@@ -143,13 +143,19 @@ void loop() {
     //static Color playColor = Color::NONE;
     //static uint8_t hysteresisCnt = 0;
 
+    int mode = checkChangeMode();
+    if (mode > 0 && mode <= Folder::_TOTAL_FOLDERS) {
+        mp3Folder = Folder(mode);
+#if DEBUG
+        Serial.print("[MP3] Changed to folder "); Serial.println(mp3Folder);
+#endif
+    }
+
     uint16_t r, g, b, c;
     tcs.getRawData(&r, &g, &b, &c);
-
-#if DEBUG >= 2
     //uint16_t temp = tcs.calculateColorTemperature_dn40(r, g, b, c);
     //uint16_t lux = tcs.calculateLux(r, g, b);
-
+#if DEBUG >= 2
     Serial.print("[TCS] ");
     //Serial.print("Temp: "); Serial.print(temp); Serial.print("K - ");
     //Serial.print("Lux: "); Serial.print(lux); Serial.print(" - ");
@@ -169,14 +175,6 @@ void loop() {
 #if DEBUG
     Serial.print("[TCS] Identified color "); Serial.println(color);
 #endif
-
-    int mode = checkChangeMode();
-    if (mode > 0 && mode <= Folder::_TOTAL_FOLDERS) {
-        mp3Folder = Folder(mode);
-#if DEBUG
-        Serial.print("[MP3] Changed to folder "); Serial.println(mp3Folder);
-#endif
-    }
 
     //if (color != lastColor) {
     //    hysteresisCnt = 1;
