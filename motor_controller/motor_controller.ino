@@ -90,13 +90,6 @@ Button selector[] = {
 int modeMap[1<<ARRAY_LEN(selector)] = {0};  // selector state → mode
 
 void setup() {
-    modeMap[0b100] = 1;
-    modeMap[0b110] = 2;
-    modeMap[0b010] = 3;
-    modeMap[0b011] = 4;
-    //modeMap[0b001] = 5;  // TODO: NC until we get a 6-way switch
-    modeMap[0b001] = 6;
-
     pinMode(MOTOR_POWER_PIN,     OUTPUT);
     pinMode(MOTOR_DIRECTION_PIN, OUTPUT);
     pinMode(SWITCH_FORWARD_PIN,  INPUT_PULLUP);
@@ -106,6 +99,14 @@ void setup() {
     for (auto& s : selector) {
         pinMode(s.pin, INPUT_PULLUP);
     }
+
+    // Selector hardware: Firefeel ST01 Strat 5-way WH lever switch
+    modeMap[0b100] = 1;
+    modeMap[0b110] = 2;
+    modeMap[0b010] = 3;
+    modeMap[0b011] = 4;
+    //modeMap[0b001] = 5;  // TODO: NC until we get a 6-way switch
+    modeMap[0b001] = 6;
 
     Serial.begin(SERIAL_BAUD_RATE);   // USB serial for logging
     Serial1.begin(SERIAL_BAUD_RATE);  // HW serial to color_to_sound
