@@ -135,7 +135,7 @@ void checkSelector() {
             state |= selector[i].active() << i;
         }
     }
-    if (state) {
+    if (state && modeMap[state]) {
         changeMode(modeMap[state]);
     }
 }
