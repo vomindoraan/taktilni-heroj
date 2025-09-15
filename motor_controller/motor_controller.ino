@@ -1,7 +1,7 @@
 #include "common.h"
 
 #ifndef DEBUG
-#   define DEBUG 0  // 0–2
+#   define DEBUG 1  // 0–2
 #endif
 #if DEBUG
 #   warning "Serial debug may interfere with commands sent to other devices"
@@ -13,10 +13,9 @@
 #define SWITCH_REVERSE_PIN  8
 #define BUTTON_FORWARD_PIN  16
 #define BUTTON_REVERSE_PIN  15
-#define SELECTOR_MODE_PIN0  2  // TODO: Unnecessary
-#define SELECTOR_MODE_PIN1  3
-#define SELECTOR_MODE_PIN2  4
-#define SELECTOR_MODE_PIN3  5
+#define SELECTOR_MODE_PIN1  2
+#define SELECTOR_MODE_PIN2  3
+#define SELECTOR_MODE_PIN3  4
 
 using time_t = unsigned long;
 
@@ -103,12 +102,9 @@ void setup() {
     pinMode(SWITCH_REVERSE_PIN,  INPUT_PULLUP);
     pinMode(BUTTON_FORWARD_PIN,  INPUT);
     pinMode(BUTTON_REVERSE_PIN,  INPUT);
-
-    pinMode(SELECTOR_MODE_PIN0, OUTPUT);
     for (auto& s : selector) {
         pinMode(s.pin, INPUT_PULLUP);
     }
-    digitalWrite(SELECTOR_MODE_PIN0, LOW);
 
     Serial.begin(SERIAL_BAUD_RATE);
 }
