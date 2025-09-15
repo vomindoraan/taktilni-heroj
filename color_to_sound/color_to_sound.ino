@@ -116,8 +116,9 @@ void setup() {
     mp3TrackMap[Color::ORANGE] = Track::D;
     mp3TrackMap[Color::PINK]   = Track::A;
 
-    Serial.begin(SERIAL_BAUD_RATE);
-    mp3Serial.begin(SW_SERIAL_BAUD_RATE);
+    Serial.begin(SERIAL_BAUD_RATE);        // USB serial for logging
+    Serial1.begin(SERIAL_BAUD_RATE);       // HW serial from motor_controller
+    mp3Serial.begin(SW_SERIAL_BAUD_RATE);  // SW serial to/from DFMiniMp3
     delay(SERIAL_BEGIN_DELAY);
 
     mp3.begin(SW_SERIAL_BAUD_RATE);
@@ -228,8 +229,8 @@ uint16_t colorDistance(
 int checkChangeMode() {
     int mode = 0;
     // Consume consecutive commands, keep latest (format: "M%d")
-    while (Serial.available() && Serial.read() == CHANGE_MODE_CMD) {
-        mode = Serial.parseInt(SKIP_NONE);
+    while (Serial1.available() && Serial1.read() == CHANGE_MODE_CMD) {
+        mode = Serial1.parseInt(SKIP_NONE);
     }
     return mode;
 }

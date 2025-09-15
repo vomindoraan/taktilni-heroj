@@ -3,9 +3,6 @@
 #ifndef DEBUG
 #   define DEBUG 1  // 0–2
 #endif
-#if DEBUG
-#   warning "Serial debug may interfere with commands sent to other devices"
-#endif
 
 #define MOTOR_POWER_PIN     21
 #define MOTOR_DIRECTION_PIN 20
@@ -106,7 +103,8 @@ void setup() {
         pinMode(s.pin, INPUT_PULLUP);
     }
 
-    Serial.begin(SERIAL_BAUD_RATE);
+    Serial.begin(SERIAL_BAUD_RATE);   // USB serial for logging
+    Serial1.begin(SERIAL_BAUD_RATE);  // HW serial to color_to_sound
 }
 
 void loop() {
@@ -163,9 +161,9 @@ void stop() {
 }
 
 void changeMode(int mode) {
-    Serial.write(CHANGE_MODE_CMD);
-    Serial.print(mode);
+    Serial1.write(CHANGE_MODE_CMD);
+    Serial1.print(mode);
 #if DEBUG
-    Serial.println(" - Change mode");
+    Serial.print("Mode "); Serial.println(mode);
 #endif
 }
