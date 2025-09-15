@@ -63,11 +63,15 @@ public:
         return state == activeState;
     }
 
-    bool pressedOn() {
+    bool toggled() {
+        return pressed() ^ wasPressed;
+    }
+
+    bool toggledOn() {
         return pressed() && !wasPressed;
     }
 
-    bool pressedOff() {
+    bool toggledOff() {
         return !pressed() && wasPressed;
     }
 };
@@ -125,14 +129,12 @@ void loop() {
 
 void checkSelector() {
     byte state = 0;
-    bool changed = false;
     for (int i = 0; i < ARRAY_LEN(selector); i++) {
-        if (selector[i].active()) {
-            state |= 1 << i;
-            changed |= selector[i].pressedOn();  // TODO: pressedOff?
+        if (selector[i].toggled()) {
+            state |= selector[i].active() << i;
         }
     }
-    if (changed) {
+    if (state) {
         changeMode(modeMap[state]);
     }
 }
