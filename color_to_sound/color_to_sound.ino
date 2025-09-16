@@ -141,23 +141,10 @@ void setup() {
 void loop() {
     static Color lastColor = Color::NONE;
 
-    int mode = checkChangeMode();
-    if (mode > 0 && mode <= Folder::_TOTAL_FOLDERS) {
-        mp3Folder = Folder(mode);
-#if DEBUG
-        Serial.print("[MP3] Changed to folder "); Serial.println(mp3Folder);
-#endif
-    }
+    processChangeMode();
 
     uint16_t r, g, b, c;
-    tcs.getRawData(&r, &g, &b, &c);
-#if DEBUG >= 2
-    Serial.print("[TCS] ");
-    Serial.print("R: "); Serial.print(r); Serial.print(", ");
-    Serial.print("G: "); Serial.print(g); Serial.print(", ");
-    Serial.print("B: "); Serial.print(b); Serial.print(", ");
-    Serial.print("C: "); Serial.print(c); Serial.println();
-#endif
+    readRGBC(r, g, b, c);
 
     Color color = identifyColor(r, g, b, c);
     if (color == Color::NONE) {
@@ -172,6 +159,17 @@ void loop() {
         playTrackFor(color);
     }
     lastColor = color;
+}
+
+void readRGBC(uint16_t& r, uint16_t& g, uint16_t& b, uint16_t& c) {
+    tcs.getRawData(&r, &g, &b, &c);
+#if DEBUG >= 2
+    Serial.print("[TCS] ");
+    Serial.print("R: "); Serial.print(r); Serial.print(", ");
+    Serial.print("G: "); Serial.print(g); Serial.print(", ");
+    Serial.print("B: "); Serial.print(b); Serial.print(", ");
+    Serial.print("C: "); Serial.print(c); Serial.println();
+#endif
 }
 
 Color identifyColor(uint16_t r, uint16_t g, uint16_t b, uint16_t c) {
@@ -226,13 +224,19 @@ uint16_t colorDistance(
     return sqrt(pow(rDiff, 2) + pow(gDiff, 2) + pow(bDiff, 2));
 }
 
-int checkChangeMode() {
+void processChangeMode() {
     int mode = 0;
     // Consume consecutive commands, keep latest (format: "M%d")
     while (Serial1.available() && Serial1.read() == CHANGE_MODE_CMD) {
         mode = Serial1.parseInt(SKIP_NONE);
     }
-    return mode;
+
+    if (mode > 0 && mode <= Folder::_TOTAL_FOLDERS) {
+        mp3Folder = Folder(mode);
+#if DEBUG
+        Serial.print("[MP3] Changed to folder "); Serial.println(mp3Folder);
+#endif
+    }
 }
 
 void playTrackFor(Color color) {
