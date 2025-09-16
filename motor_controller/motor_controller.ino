@@ -26,8 +26,7 @@
 
 using time_t = unsigned long;
 
-class Switch {
-public:
+struct Switch {
     byte const pin;
     bool const activeState;
 
