@@ -4,10 +4,11 @@
 #   define DEBUG 1  // 0–2
 #endif
 
-#define FIREFEEL_5WAY    'F'  // Firefeel ST01 Strat 5-way WH lever switch
-#define OAKGRIGSBY_6WAY  'O'  // Oak-Grigsby 6-way pickup selector lever switch
+#define GENERIC_TL_5WAY  '5'  // Generic Telecaster 5-way lever switch (KP)
+#define OAKGRIGSBY_6WAY  '6'  // Oak-Grigsby MX3070 6-way lever switch
+#define FIREFEEL_ST_5WAY 'F'  // Firefeel ST01 Stratocaster 5-way lever switch
 #ifndef SELECTOR_TYPE
-#   define SELECTOR_TYPE FIREFEEL_5WAY
+#   define SELECTOR_TYPE GENERIC_TL_5WAY
 #endif
 
 #define MOTOR_POWER_PIN     21
@@ -112,7 +113,7 @@ void setup() {
         pinMode(s.pin, INPUT_PULLUP);
     }
 
-#if SELECTOR_TYPE == FIREFEEL_5WAY
+#if SELECTOR_TYPE == GENERIC_TL_5WAY
     // Pins:  876 + 5(GND)
     modeMap[0b100] = 1;
     modeMap[0b110] = 2;
@@ -127,6 +128,8 @@ void setup() {
     modeMap[0b0100] = 4;
     modeMap[0b1100] = 5;
     modeMap[0b1000] = 6;
+#elif SELECTOR_TYPE == FIREFEEL_ST_5WAY
+#   error "Not implemented"
 #else
 #   error "Invalid selector type"
 #endif
