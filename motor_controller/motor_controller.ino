@@ -133,6 +133,7 @@ void setup() {
 
     Serial.begin(SERIAL_BAUD_RATE);   // USB serial for logging
     Serial1.begin(SERIAL_BAUD_RATE);  // HW serial to color_to_sound
+    delay(SERIAL_BEGIN_DELAY);
 }
 
 void loop() {
