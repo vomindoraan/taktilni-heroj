@@ -141,10 +141,10 @@ void setup() {
 void loop() {
     static Color lastColor = Color::NONE;
 
-    processChangeMode();
+    readChangeMode();  // Reads from motor_controller via Serial1
 
     uint16_t r, g, b, c;
-    readRGBC(r, g, b, c);
+    readRGBC(r, g, b, c);  // Reads from TCS34725 via I2C
 
     Color color = identifyColor(r, g, b, c);
     if (color == Color::NONE) {
@@ -156,7 +156,7 @@ void loop() {
 #endif
 
     if (color != lastColor) {
-        playTrackFor(color);
+        playTrackFor(color);  // Writes to DFMiniMp3 via mp3Serial
     }
     lastColor = color;
 }
@@ -224,7 +224,7 @@ uint16_t colorDistance(
     return sqrt(pow(rDiff, 2) + pow(gDiff, 2) + pow(bDiff, 2));
 }
 
-void processChangeMode() {
+void readChangeMode() {
     int mode = 0;
     // Consume consecutive commands, keep latest (format: "M%d")
     while (Serial1.available() && Serial1.read() == CHANGE_MODE_CMD) {
