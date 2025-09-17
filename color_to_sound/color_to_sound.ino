@@ -147,16 +147,13 @@ void loop() {
     readRGBC(r, g, b, c);  // Reads from TCS34725 via I2C
 
     Color color = identifyColor(r, g, b, c);
-    if (color == Color::NONE) {
-        lastColor = Color::NONE;
-        return;
-    }
+    if (color != Color::NONE) {
 #if DEBUG
-    Serial.print("[TCS] Identified color "); Serial.println(color);
+        Serial.print("[TCS] Identified color "); Serial.println(color);
 #endif
-
-    if (color != lastColor) {
-        playTrackFor(color);  // Writes to DFMiniMp3 via mp3Serial
+        if (color != lastColor) {
+            playTrackFor(color);  // Writes to DFMiniMp3 via mp3Serial
+        }
     }
     lastColor = color;
 }
@@ -240,10 +237,7 @@ void readChangeMode() {
 }
 
 void playTrackFor(Color color) {
-    Folder folder = mp3Folder;
-    if (folder == MIXED) {
-        folder = Folder(SENSOR_NO);
-    }
+    Folder folder = (mp3Folder == MIXED) ? Folder(SENSOR_NO) : mp3Folder;
     Track track = mp3TrackMap[color];
 #if DEBUG
     Serial.print("[MP3] Playing track "); Serial.print(folder);
