@@ -218,7 +218,7 @@ uint16_t colorDistance(
     int16_t rDiff = int16_t(r) - int16_t(rSample);
     int16_t gDiff = int16_t(g) - int16_t(gSample);
     int16_t bDiff = int16_t(b) - int16_t(bSample);
-    return sqrt(pow(rDiff, 2) + pow(gDiff, 2) + pow(bDiff, 2));
+    return sqrt(sq(rDiff) + sq(gDiff) + sq(bDiff));
 }
 
 void readChangeMode() {
