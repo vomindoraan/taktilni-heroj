@@ -11,7 +11,9 @@ struct Switch {
         activeState{activeState}
     {}
 
-    bool active() const {
+    virtual ~Switch() {}
+
+    virtual bool active() const {
         return digitalRead(pin) == activeState;
     }
 };
@@ -19,32 +21,40 @@ struct Switch {
 class DebouncedButton : public Switch {
 private:
     bool   state;
-    bool   lastState;
+    bool   lastReading;
     bool   wasPressed;
     time_t debounceDelay;
+    time_t lastReadingTime;
     time_t lastDebounceTime;
 
 public:
     DebouncedButton(byte pin, bool activeState = LOW, time_t debounceDelay = 50) :
         Switch{pin, activeState},
         state{!activeState},
-        lastState{!activeState},
+        lastReading{!activeState},
         wasPressed{false},
         debounceDelay{debounceDelay},
+        lastReadingTime{0},
         lastDebounceTime{0}
     {}
+
+    bool active() const override {
+        return (millis() - lastReadingTime < debounceDelay)
+            ? state == activeState
+            : Switch::active();
+    }
 
     bool pressed() {
         wasPressed = state == activeState;
         bool reading = digitalRead(pin);
-        time_t currentTime = millis();
-        if (reading != lastState) {
-            lastDebounceTime = currentTime;
+        lastReadingTime = millis();
+        if (reading != lastReading) {
+            lastDebounceTime = lastReadingTime;
         }
-        if (currentTime - lastDebounceTime > debounceDelay && reading != state) {
+        if (lastReadingTime - lastDebounceTime > debounceDelay && reading != state) {
             state = reading;
         }
-        lastState = reading;
+        lastReading = reading;
         return state == activeState;
     }
 
