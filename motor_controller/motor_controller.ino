@@ -155,13 +155,13 @@ void loop() {
 }
 
 void checkSelector() {
+    bool changed = false;
     byte state = 0;
     for (int i = 0; i < ARRAY_LEN(selector); i++) {
-        if (selector[i].toggled()) {
-            state |= selector[i].active() << i;
-        }
+        changed |= selector[i].toggled();
+        state |= selector[i].active() << i;
     }
-    if (state && modeMap[state]) {
+    if (changed && modeMap[state]) {
         changeMode(modeMap[state]);
     }
 }
