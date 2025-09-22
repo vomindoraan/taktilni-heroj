@@ -53,7 +53,7 @@ enum Color : uint16_t {
     CYAN,
     ORANGE,
     PINK,
-    LIGHTBLUE,
+    AZURE,
     WHITE,
     _TOTAL_COLORS
 };
@@ -105,7 +105,7 @@ using DfMp3 = DFMiniMp3<SoftwareSerial, Mp3Callbacks>;
 DfMp3 mp3{mp3Serial};
 
 Folder mp3Folder = MP3_DEFAULT_FOLDER;
-Track  mp3TrackMap[Color::_TOTAL_COLORS];  // Color → track number
+Track  mp3TrackMap[Color::_TOTAL_COLORS];  // Color → track no.
 
 void setup() {
     mp3TrackMap[Color::RED]    = Track::C_MAJOR;

@@ -25,17 +25,17 @@
 #   define SELECTOR_PIN4    5
 #endif
 
-Switch switchForward = {SWITCH_FORWARD_PIN, LOW};
-Switch switchReverse = {SWITCH_REVERSE_PIN, LOW};
-Button buttonForward = {BUTTON_FORWARD_PIN, LOW};
-Button buttonReverse = {BUTTON_REVERSE_PIN, LOW};
+Switch switchForward = {SWITCH_FORWARD_PIN};
+Switch switchReverse = {SWITCH_REVERSE_PIN};
+Button buttonForward = {BUTTON_FORWARD_PIN};
+Button buttonReverse = {BUTTON_REVERSE_PIN};
 
 Button selector[] = {
-    {SELECTOR_PIN1, LOW},
-    {SELECTOR_PIN2, LOW},
-    {SELECTOR_PIN3, LOW},
+    {SELECTOR_PIN1},
+    {SELECTOR_PIN2},
+    {SELECTOR_PIN3},
 #if SELECTOR_TYPE == OAKGRIGSBY_6WAY
-    {SELECTOR_PIN4, LOW},
+    {SELECTOR_PIN4},
 #endif
 };
 
@@ -48,7 +48,7 @@ void setup() {
     pinMode(SWITCH_REVERSE_PIN,  INPUT_PULLUP);
     pinMode(BUTTON_FORWARD_PIN,  INPUT);
     pinMode(BUTTON_REVERSE_PIN,  INPUT);
-    for (auto& s : selector) {
+    for (auto&& s : selector) {
         pinMode(s.pin, INPUT_PULLUP);
     }
 
