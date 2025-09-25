@@ -73,6 +73,8 @@ void setup() {
 #   error "Invalid selector type"
 #endif
 
+    stop();  // Prevent track from moving at startup
+
     Serial.begin(SERIAL_BAUD_RATE);   // USB serial for logging
     Serial1.begin(SERIAL_BAUD_RATE);  // HW serial to color_to_sound
     delay(SERIAL_BEGIN_DELAY);
