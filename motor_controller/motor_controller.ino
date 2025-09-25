@@ -81,6 +81,7 @@ void setup() {
 }
 
 void loop() {
+    checkSync();
     checkSelector();
 
     if (switchForward.active()) {
@@ -94,6 +95,10 @@ void loop() {
     } else {
         stop();
     }
+}
+
+void checkSync() {
+    
 }
 
 void checkSelector() {
@@ -131,9 +136,17 @@ void stop() {
 #endif
 }
 
+void sync() {
+    Serial1.print(CMD_READ_COLOR);
+#if DEBUG >= 2
+    Serial.println("Sync");
+#endif
+}
+
 void changeMode(int mode) {
-    Serial1.write(CHANGE_MODE_CMD);
-    Serial1.print(mode);
+    char cmd[CMD_CHANGE_MODE_SZ];
+    snprintf(cmd, CMD_CHANGE_MODE_SZ, CMD_CHANGE_MODE_FMT, mode);
+    Serial1.print(cmd);
 #if DEBUG
     Serial.print("Mode "); Serial.println(mode);
 #endif

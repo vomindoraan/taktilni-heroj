@@ -10,4 +10,7 @@
 #define SW_SERIAL_BAUD_RATE 9600
 #define SERIAL_BEGIN_DELAY  2500
 
-#define CHANGE_MODE_CMD 'M'
+#define CMD_SYNC            'S'
+#define CMD_CHANGE_MODE     'M'
+#define CMD_CHANGE_MODE_FMT "M%d"
+#define CMD_CHANGE_MODE_SZ  8

@@ -221,6 +221,14 @@ uint16_t colorDistance(
     return sqrt(sq(rDiff) + sq(gDiff) + sq(bDiff));
 }
 
+void readCommand() {
+    if (Serial1.available()) {
+        switch (Serial1.read()) {
+
+        }
+    }
+}
+
 void readChangeMode() {
     int mode = 0;
     // Consume consecutive commands, keep latest (format: "M%d")
