@@ -15,21 +15,19 @@
 #define COLOR_C_THRESHOLD     160
 #define COLOR_DIST_THRESHOLD  15
 #define COLOR_CDIST_THRESHOLD 100
-//#define COLOR_HYSTERESIS      2
 
-#define MP3_SERIAL_RX_PIN  5
-#define MP3_SERIAL_TX_PIN  4
+#define MP3_SERIAL_RX_PIN  9
+#define MP3_SERIAL_TX_PIN  8
 #define MP3_DEFAULT_VOLUME 30  // 0–30
-#define MP3_DEFAULT_FOLDER TONES
-
-#define WAIT_FOREVER() for (;;) delay(100)
+#define MP3_DEFAULT_FOLDER Folder::TONES
 
 enum Folder : uint8_t {
     TONES = 1,
     DRUMS,
     WORDS,
     AMBIENCE,
-    MIXED,
+    WILDLIFE,
+    MIXED,  // Mix of 1–4, one folder per sensor
     _TOTAL_FOLDERS = MIXED
 };
 
@@ -55,7 +53,7 @@ enum Color : uint16_t {
     CYAN,
     ORANGE,
     PINK,
-    LIGHTBLUE,
+    AZURE,
     WHITE,
     _TOTAL_COLORS
 };
@@ -107,7 +105,7 @@ using DfMp3 = DFMiniMp3<SoftwareSerial, Mp3Callbacks>;
 DfMp3 mp3{mp3Serial};
 
 Folder mp3Folder = MP3_DEFAULT_FOLDER;
-Track  mp3TrackMap[Color::_TOTAL_COLORS];  // Color → track number
+Track  mp3TrackMap[Color::_TOTAL_COLORS];  // Color → track no.
 
 void setup() {
     mp3TrackMap[Color::RED]    = Track::C_MAJOR;
@@ -118,7 +116,10 @@ void setup() {
     mp3TrackMap[Color::ORANGE] = Track::D;
     mp3TrackMap[Color::PINK]   = Track::A;
 
-    Serial.begin(SERIAL_BAUD_RATE);
+    Serial.begin(SERIAL_BAUD_RATE);        // USB serial for logging
+    Serial1.begin(SERIAL_BAUD_RATE);       // HW serial from motor_controller
+    mp3Serial.begin(SW_SERIAL_BAUD_RATE);  // SW serial to/from DFMiniMp3
+    delay(SERIAL_BEGIN_DELAY);
 
     mp3.begin(SW_SERIAL_BAUD_RATE);
 #if DEBUG
@@ -132,59 +133,40 @@ void setup() {
     }
 #if DEBUG
     else {
-        Serial.println("[TCS] Sensor connected");
+        Serial.println("[TCS] Sensor " STR(SENSOR_NO) " online");
     }
 #endif
 }
 
 void loop() {
     static Color lastColor = Color::NONE;
-    //static Color playColor = Color::NONE;
-    //static uint8_t hysteresisCnt = 0;
+
+    readChangeMode();  // Reads from motor_controller via Serial1
 
     uint16_t r, g, b, c;
+    readRGBC(r, g, b, c);  // Reads from TCS34725 via I2C
+
+    Color color = identifyColor(r, g, b, c);
+    if (color != Color::NONE) {
+#if DEBUG
+        Serial.print("[TCS] Identified color "); Serial.println(color);
+#endif
+        if (color != lastColor) {
+            playTrackFor(color);  // Writes to DFMiniMp3 via mp3Serial
+        }
+    }
+    lastColor = color;
+}
+
+void readRGBC(uint16_t& r, uint16_t& g, uint16_t& b, uint16_t& c) {
     tcs.getRawData(&r, &g, &b, &c);
-
 #if DEBUG >= 2
-    //uint16_t temp = tcs.calculateColorTemperature_dn40(r, g, b, c);
-    //uint16_t lux = tcs.calculateLux(r, g, b);
-
     Serial.print("[TCS] ");
-    //Serial.print("Temp: "); Serial.print(temp); Serial.print("K - ");
-    //Serial.print("Lux: "); Serial.print(lux); Serial.print(" - ");
     Serial.print("R: "); Serial.print(r); Serial.print(", ");
     Serial.print("G: "); Serial.print(g); Serial.print(", ");
     Serial.print("B: "); Serial.print(b); Serial.print(", ");
     Serial.print("C: "); Serial.print(c); Serial.println();
 #endif
-
-    Color color = identifyColor(r, g, b, c);
-    if (color == Color::NONE) {
-        lastColor = Color::NONE;
-        //playColor = Color::NONE;
-        //hysteresisCnt = 0;
-        return;
-    }
-#if DEBUG
-    Serial.print("[TCS] Identified color "); Serial.println(color);
-#endif
-
-    if (shouldChangeMode()) {
-        mp3Folder = Folder(mp3Folder % Folder::_TOTAL_FOLDERS + 1);
-#if DEBUG
-        Serial.print("[MP3] Changed to folder "); Serial.println(mp3Folder);
-#endif
-    }
-
-    //if (color != lastColor) {
-    //    hysteresisCnt = 1;
-    //} else if (++hysteresisCnt >= COLOR_HYSTERESIS && color != playColor) {
-    //    playTrackFor(playColor = color);
-    //}
-    if (color != lastColor) {
-        playTrackFor(color);
-    }
-    lastColor = color;
 }
 
 Color identifyColor(uint16_t r, uint16_t g, uint16_t b, uint16_t c) {
@@ -200,7 +182,7 @@ Color identifyColor(uint16_t r, uint16_t g, uint16_t b, uint16_t c) {
 #if DEBUG >= 2
     Serial.print("[TCS] Distances: ");
 #endif
-    for (int16_t i = 0; i < COLOR_COUNT; i++) {
+    for (int i = 0; i < COLOR_COUNT; i++) {
         auto [color, rSample, gSample, bSample, cSample] = COLOR_SAMPLES[i];
         uint16_t dist = colorDistance(r, g, b, c, rSample, gSample, bSample, cSample);
         uint16_t cDist = abs(int16_t(c) - int16_t(cSample));
@@ -210,7 +192,7 @@ Color identifyColor(uint16_t r, uint16_t g, uint16_t b, uint16_t c) {
 #endif
         if (
             dist < COLOR_DIST_THRESHOLD && cDist < COLOR_CDIST_THRESHOLD &&
-            dist < bestMatchDist && cDist < bestMatchCDist
+            dist < bestMatchDist        && cDist < bestMatchCDist
         ) {
             bestMatch = Color(color);
             bestMatchDist = dist;
@@ -236,22 +218,30 @@ uint16_t colorDistance(
     int16_t rDiff = int16_t(r) - int16_t(rSample);
     int16_t gDiff = int16_t(g) - int16_t(gSample);
     int16_t bDiff = int16_t(b) - int16_t(bSample);
-    return sqrt(pow(rDiff, 2) + pow(gDiff, 2) + pow(bDiff, 2));
+    return sqrt(sq(rDiff) + sq(gDiff) + sq(bDiff));
 }
 
-bool shouldChangeMode() {
-    return Serial.available() && Serial.read() == CHANGE_MODE_CMD;
+void readChangeMode() {
+    int mode = 0;
+    // Consume consecutive commands, keep latest (format: "M%d")
+    while (Serial1.available() && Serial1.read() == CHANGE_MODE_CMD) {
+        mode = Serial1.parseInt(SKIP_NONE);
+    }
+
+    if (mode > 0 && mode <= Folder::_TOTAL_FOLDERS) {
+        mp3Folder = Folder(mode);
+#if DEBUG
+        Serial.print("[MP3] Changed to folder "); Serial.println(mp3Folder);
+#endif
+    }
 }
 
 void playTrackFor(Color color) {
-    Folder folder = mp3Folder;
-    if (folder == MIXED) {
-        folder = Folder(SENSOR_NO);
-    }
+    Folder folder = (mp3Folder == MIXED) ? Folder(SENSOR_NO) : mp3Folder;
     Track track = mp3TrackMap[color];
 #if DEBUG
     Serial.print("[MP3] Playing track "); Serial.print(folder);
-    Serial.print("/"); Serial.println(track);
+    Serial.print("\\"); Serial.println(track);
 #endif
     mp3.playFolderTrack(folder, track);
 }
