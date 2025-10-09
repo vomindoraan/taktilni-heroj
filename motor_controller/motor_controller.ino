@@ -9,7 +9,7 @@
 #define OAKGRIGSBY_6WAY  '6'  // Oak-Grigsby MX3070 6-way lever switch
 #define FIREFEEL_ST_5WAY 'F'  // Firefeel ST01 Stratocaster 5-way lever switch
 #ifndef SELECTOR_TYPE
-#   define SELECTOR_TYPE GENERIC_TL_5WAY
+#   define SELECTOR_TYPE OAKGRIGSBY_6WAY
 #endif
 
 #define MOTOR_POWER_PIN     21
@@ -61,19 +61,19 @@ void setup() {
     modeMap[0b001] = 6;
 #elif SELECTOR_TYPE == OAKGRIGSBY_6WAY
     // Pins: A4321 + A0(GND)
-    modeMap[0b0011] = 1;
-    modeMap[0b0010] = 2;
-    modeMap[0b0110] = 3;
-    modeMap[0b0100] = 4;
-    modeMap[0b1100] = 5;
-    modeMap[0b1000] = 6;
+    modeMap[0b1000] = 1;
+    modeMap[0b1100] = 2;
+    modeMap[0b0100] = 3;
+    modeMap[0b0110] = 4;
+    modeMap[0b0010] = 5;
+    modeMap[0b0011] = 6;
 #elif SELECTOR_TYPE == FIREFEEL_ST_5WAY
 #   error "Not implemented"
 #else
 #   error "Invalid selector type"
 #endif
 
-    stop();  // Prevent track from moving at startup
+    stop();  // Prevent movement at startup
 
     Serial.begin(SERIAL_BAUD_RATE);   // USB serial for logging
     Serial1.begin(SERIAL_BAUD_RATE);  // HW serial to color_to_sound
