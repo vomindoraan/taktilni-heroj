@@ -1,57 +1,140 @@
+#include "common.h"
+#include "Switch.h"
+
+#ifndef DEBUG
+#   define DEBUG 1  // 0–2
+#endif
+
+#define GENERIC_TL_5WAY  '5'  // Generic Telecaster 5-way lever switch (KP)
+#define OAKGRIGSBY_6WAY  '6'  // Oak-Grigsby MX3070 6-way lever switch
+#define FIREFEEL_ST_5WAY 'F'  // Firefeel ST01 Stratocaster 5-way lever switch
+#ifndef SELECTOR_TYPE
+#   define SELECTOR_TYPE OAKGRIGSBY_6WAY
+#endif
+
+#define MOTOR_POWER_PIN     21
+#define MOTOR_DIRECTION_PIN 20
 #define SWITCH_FORWARD_PIN  9
 #define SWITCH_REVERSE_PIN  8
 #define BUTTON_FORWARD_PIN  16
 #define BUTTON_REVERSE_PIN  15
-#define MOTOR_POWER_PIN     21
-#define MOTOR_DIRECTION_PIN 20
+#define SELECTOR_PIN1       2
+#define SELECTOR_PIN2       3
+#define SELECTOR_PIN3       4
+#if SELECTOR_TYPE == OAKGRIGSBY_6WAY
+#   define SELECTOR_PIN4    5
+#endif
+
+Switch switchForward = {SWITCH_FORWARD_PIN};
+Switch switchReverse = {SWITCH_REVERSE_PIN};
+Button buttonForward = {BUTTON_FORWARD_PIN};
+Button buttonReverse = {BUTTON_REVERSE_PIN};
+
+Button selector[] = {
+    {SELECTOR_PIN1},
+    {SELECTOR_PIN2},
+    {SELECTOR_PIN3},
+#if SELECTOR_TYPE == OAKGRIGSBY_6WAY
+    {SELECTOR_PIN4},
+#endif
+};
+
+int modeMap[1<<ARRAY_LEN(selector)] = {0};  // selector state → mode
 
 void setup() {
+    pinMode(MOTOR_POWER_PIN,     OUTPUT);
+    pinMode(MOTOR_DIRECTION_PIN, OUTPUT);
     pinMode(SWITCH_FORWARD_PIN,  INPUT_PULLUP);
     pinMode(SWITCH_REVERSE_PIN,  INPUT_PULLUP);
     pinMode(BUTTON_FORWARD_PIN,  INPUT);
     pinMode(BUTTON_REVERSE_PIN,  INPUT);
-    pinMode(MOTOR_POWER_PIN,     OUTPUT);
-    pinMode(MOTOR_DIRECTION_PIN, OUTPUT);
+    for (auto&& s : selector) {
+        pinMode(s.pin, INPUT_PULLUP);
+    }
 
-    Serial.begin(115200);
+#if SELECTOR_TYPE == GENERIC_TL_5WAY
+    // Pins:  876 + 5(GND)
+    modeMap[0b100] = 1;
+    modeMap[0b110] = 2;
+    modeMap[0b010] = 3;
+    modeMap[0b011] = 4;
+    modeMap[0b001] = 6;
+#elif SELECTOR_TYPE == OAKGRIGSBY_6WAY
+    // Pins: A4321 + A0(GND)
+    modeMap[0b1000] = 1;
+    modeMap[0b1100] = 2;
+    modeMap[0b0100] = 3;
+    modeMap[0b0110] = 4;
+    modeMap[0b0010] = 5;
+    modeMap[0b0011] = 6;
+#elif SELECTOR_TYPE == FIREFEEL_ST_5WAY
+#   error "Not implemented"
+#else
+#   error "Invalid selector type"
+#endif
+
+    stop();  // Prevent movement at startup
+
+    Serial.begin(SERIAL_BAUD_RATE);   // USB serial for logging
+    Serial1.begin(SERIAL_BAUD_RATE);  // HW serial to color_to_sound
+    delay(SERIAL_BEGIN_DELAY);
 }
 
 void loop() {
-    if (digitalRead(SWITCH_FORWARD_PIN) == LOW) {
-        play_forward();
-    } else if (digitalRead(SWITCH_REVERSE_PIN) == LOW) {
-        play_reverse();
+    checkSelector();
+
+    if (switchForward.active()) {
+        forward();
+    } else if (switchReverse.active()) {
+        reverse();
+    } else if (buttonForward.pressed()) {
+        forward();
+    } else if (buttonReverse.pressed()) {
+        reverse();
     } else {
         stop();
-        // if (digitalRead(BUTTON_FORWARD_PIN) == LOW) {
-        //     step_forward();
-        // } else if (digitalRead(BUTTON_REVERSE_PIN) == LOW) {
-        //     step_reverse();
-        // }
     }
 }
 
-void play_forward() {
+void checkSelector() {
+    bool changed = false;
+    byte state = 0;
+    for (int i = 0; i < ARRAY_LEN(selector); i++) {
+        changed |= selector[i].toggled();
+        state |= selector[i].active() << i;
+    }
+    if (changed && modeMap[state]) {
+        changeMode(modeMap[state]);
+    }
+}
+
+void forward() {
     digitalWrite(MOTOR_POWER_PIN,     LOW);
     digitalWrite(MOTOR_DIRECTION_PIN, HIGH);
-    Serial.println("Playing forward");
+#if DEBUG >= 2
+    Serial.println("Forward");
+#endif
 }
 
-void play_reverse() {
+void reverse() {
     digitalWrite(MOTOR_POWER_PIN,     LOW);
     digitalWrite(MOTOR_DIRECTION_PIN, LOW);
-    Serial.println("Playing reverse");
-}
-
-void step_forward() {
-
-}
-
-void step_reverse() {
-
+#if DEBUG >= 2
+    Serial.println("Reverse");
+#endif
 }
 
 void stop() {
     digitalWrite(MOTOR_POWER_PIN, HIGH);
-    Serial.println("Stopped");
+#if DEBUG >= 2
+    Serial.println("Stop");
+#endif
+}
+
+void changeMode(int mode) {
+    Serial1.write(CHANGE_MODE_CMD);
+    Serial1.print(mode);
+#if DEBUG
+    Serial.print("Mode "); Serial.println(mode);
+#endif
 }
