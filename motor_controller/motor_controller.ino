@@ -78,13 +78,12 @@ void setup() {
     Serial.begin(SERIAL_BAUD_RATE);   // USB serial for logging
     Serial1.begin(SERIAL_BAUD_RATE);  // HW serial to color_to_sound
     delay(SERIAL_BEGIN_DELAY);
-
-    delay(1000);  // TODO
-    sync();
 }
 
 void loop() {
     checkSelector();
+
+    checkSync();
 
     if (switchForward.active()) {
         forward();
@@ -96,6 +95,16 @@ void loop() {
         reverse();
     } else {
         stop();
+    }
+}
+
+void checkSync() {
+    static time_t lastSyncTime = 0;
+    time_t syncTime = millis();
+    time_t syncInterval = PLAY_TIMER_INTERVAL;  // TODO: Scale based on ADC pot value
+    if (syncTime - lastSyncTime >= syncInterval) {
+        sync();
+        lastSyncTime = syncTime;
     }
 }
 

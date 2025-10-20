@@ -49,7 +49,7 @@ enum Track : uint8_t {
 };
 
 enum PlayMode : uint8_t {
-    ON_SYNC,
+    ON_SYNC = 1,
     SELF_TIMED,
 };
 
@@ -134,9 +134,6 @@ void setup() {
     Serial1.begin(SERIAL_BAUD_RATE);       // HW serial from motor_controller
     mp3Serial.begin(SW_SERIAL_BAUD_RATE);  // SW serial to/from DFMiniMp3
     delay(SERIAL_BEGIN_DELAY);
-#if DEBUG >= 2
-    Serial.print("serial @ "); Serial.println(millis());
-#endif
 
     mp3.begin(SW_SERIAL_BAUD_RATE);
 #if DEBUG
@@ -169,7 +166,8 @@ void setup() {
         playTimer.begin(PLAY_TIMER_INTERVAL);
     }
 #if DEBUG >= 2
-    Serial.print("sync @ "); Serial.println(millis());
+    Serial.print("Playing in mode "); Serial.print(playMode);
+    Serial.print(" @ "); Serial.println(millis());
 #endif
 }
 
@@ -177,12 +175,8 @@ void loop() {
     static Color lastColor = Color::NONE;
     static Color enqueuedColor = Color::NONE;
 
-    bool shouldPlay = readCommands();  // Reads from motor_controller via Serial1
-
     uint16_t r, g, b, c;
-    bool rgbcAvailable = readRGBC_nb(r, g, b, c);  // Reads from TCS34725 via I2C
-
-    if (rgbcAvailable) {
+    if (readRGBC_nb(r, g, b, c)) {  // Reads from TCS34725 via I2C
         Color color = identifyColor(r, g, b, c);
         if (color != Color::NONE) {
 #if DEBUG
@@ -195,14 +189,13 @@ void loop() {
         lastColor = color;
     }
 
-    if (enqueuedColor != Color::NONE) {
-        if (playMode == PlayMode::SELF_TIMED) {
-            shouldPlay = playTimer.ready();
-        }
-        if (shouldPlay) {
-            playTrackFor(enqueuedColor);  // Writes to DFMiniMp3 via mp3Serial
-            enqueuedColor = Color::NONE;
-        }
+    bool play = readCommands();  // Reads from motor_controller via Serial1
+    if (playMode == PlayMode::SELF_TIMED) {
+        play = playTimer.ready();
+    }
+    if (play && enqueuedColor != Color::NONE) {
+        playTrackFor(enqueuedColor);  // Writes to DFMiniMp3 via mp3Serial
+        enqueuedColor = Color::NONE;
     }
 }
 
@@ -236,7 +229,6 @@ bool readRGBC_nb(uint16_t& r, uint16_t& g, uint16_t& b, uint16_t& c) {
     Serial.print("B: "); Serial.print(b); Serial.print(", ");
     Serial.print("C: "); Serial.print(c); Serial.println();
 #endif
-
     lastIntegrationTime = millis();
     return true;
 }
@@ -250,7 +242,6 @@ Color identifyColor(uint16_t r, uint16_t g, uint16_t b, uint16_t c) {
     Color bestMatch = Color::NONE;
     uint16_t bestMatchDist = UINT16_MAX;
     uint16_t bestMatchCDist = UINT16_MAX;
-
 #if DEBUG >= 2
     Serial.print("[TCS] Distances: ");
 #endif
@@ -271,7 +262,6 @@ Color identifyColor(uint16_t r, uint16_t g, uint16_t b, uint16_t c) {
             bestMatchCDist = cDist;
         }
     }
-
     return bestMatch;
 }
 
@@ -294,20 +284,23 @@ uint16_t colorDistance(
 }
 
 bool readCommands() {
+    bool play = false;
     while (Serial1.available()) {
         switch (Serial1.peek()) {
         case CMD_SYNC:
             readSync();
-            return playMode == PlayMode::ON_SYNC;
+            play |= playMode == PlayMode::ON_SYNC;
+            break;
 
         case CMD_CHANGE_MODE:
             readChangeMode();
-            return false;
+            break;
 
         default:
-            return false;
+            Serial1.read();  // Ignore non-command chars
         }
     }
+    return play;
 }
 
 void readSync() {
