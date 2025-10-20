@@ -1,5 +1,7 @@
 #pragma once
 
+using time_t = unsigned long;
+
 struct Switch {
     byte const pin;
     bool const activeState;

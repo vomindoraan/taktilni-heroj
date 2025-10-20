@@ -1,5 +1,7 @@
 #pragma once
 
+using time_t = unsigned long;
+
 ISR(TIMER1_COMPA_vect);
 
 class Timer1 {
@@ -9,8 +11,8 @@ public:
         return i;
     }
 
-    void begin(unsigned long intervalMs);
-    bool ready();
+    void begin(time_t interval);
+    bool ready();  // Read and reset flag
 
     friend void TIMER1_COMPA_vect(void);
 
