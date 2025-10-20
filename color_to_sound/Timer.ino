@@ -14,8 +14,10 @@ void Timer1::begin(time_ms interval) {
 }
 
 bool Timer1::ready() {
+    noInterrupts();
     bool flagValue = flag;
     flag = false;
+    interrupts();
     return flagValue;
 }
 
