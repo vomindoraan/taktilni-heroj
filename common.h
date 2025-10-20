@@ -16,8 +16,8 @@
 #define CMD_CHANGE_MODE_FMT "M%d"
 #define CMD_CHANGE_MODE_SZ  8U
 
-#define SYNC_INTERVAL_LOW   150UL
-#define SYNC_INTERVAL_HIGH  500UL
-#define PLAY_TIMER_INTERVAL 250UL  // TODO: Determine best value
+// TODO: Determine best values
+#define SYNC_INTERVAL_SLOW  500UL
+#define SYNC_INTERVAL_FAST  150UL
 
 using time_ms = unsigned long;

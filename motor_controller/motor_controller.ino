@@ -14,6 +14,7 @@
 
 #define MOTOR_POWER_PIN     21
 #define MOTOR_DIRECTION_PIN 20
+#define POT_SPEED_PIN       19
 #define SWITCH_FORWARD_PIN  9
 #define SWITCH_REVERSE_PIN  8
 #define BUTTON_FORWARD_PIN  16
@@ -100,11 +101,20 @@ void loop() {
 
 void checkSync() {
     static time_ms lastSyncTime;
+    static time_ms syncInterval = SYNC_INTERVAL_SLOW;
+
     time_ms syncTime = millis();
-    time_ms syncInterval = PLAY_TIMER_INTERVAL;  // TODO: Scale based on ADC pot value
     if (syncTime - lastSyncTime >= syncInterval) {
         sync();
         lastSyncTime = syncTime;
+
+        // Update sync interval based on pot ADC value
+        int speed = analogRead(POT_SPEED_PIN);
+        syncInterval = map(
+            constrain(speed, 0, 1023),
+            0, 1023,
+            SYNC_INTERVAL_SLOW, SYNC_INTERVAL_FAST
+        );
     }
 }
 
@@ -145,7 +155,7 @@ void stop() {
 
 void sync() {
     Serial1.print(CMD_SYNC);
-#if DEBUG >= 2
+#if DEBUG
     Serial.println("Sync");
 #endif
 }

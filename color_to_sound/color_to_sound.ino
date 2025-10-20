@@ -163,7 +163,7 @@ void setup() {
         playTiming = PlayTiming::ON_SYNC;
     } else {
         playTiming = PlayTiming::SELF_TIMED;
-        playTimer.begin(PLAY_TIMER_INTERVAL);
+        playTimer.begin(SYNC_INTERVAL_FAST);
     }
 #if DEBUG
     Serial.print("[MP3] Playing ");
@@ -308,7 +308,7 @@ void readSync() {
     // Consume consecutive commands
     while (Serial1.available() && Serial1.read() == CMD_SYNC) {
 #if DEBUG >= 2
-        Serial.println("Sync")
+        Serial.print("[CMD] Sync @ "); Serial.print(millis()); Serial.println("ms");
 #endif
     }
 }
@@ -318,6 +318,9 @@ void readChangeMode() {
     // Consume consecutive commands, keep latest (format: "M%d")
     while (Serial1.available() && Serial1.read() == CMD_CHANGE_MODE) {
         mode = Serial1.parseInt(SKIP_NONE);
+#if DEBUG >= 2
+        Serial.print("[CMD] Mode "); Serial.println(mode);
+#endif
     }
 
     if (mode > 0 && mode <= Folder::_TOTAL_FOLDERS) {
