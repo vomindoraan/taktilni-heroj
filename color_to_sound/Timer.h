@@ -17,7 +17,7 @@ public:
     friend void TIMER1_COMPA_vect(void);
 
 private:
-    volatile bool flag;
+    bool volatile flag;
 
     Timer1() {}
 };

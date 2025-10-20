@@ -39,7 +39,7 @@ Button selector[] = {
 #endif
 };
 
-int modeMap[1<<ARRAY_LEN(selector)] = {0};  // selector state → mode
+int modeMap[1<<ARRAY_LEN(selector)];  // Selector state → mode
 
 void setup() {
     pinMode(MOTOR_POWER_PIN,     OUTPUT);
@@ -99,7 +99,7 @@ void loop() {
 }
 
 void checkSync() {
-    static time_ms lastSyncTime = 0;
+    static time_ms lastSyncTime;
     time_ms syncTime = millis();
     time_ms syncInterval = PLAY_TIMER_INTERVAL;  // TODO: Scale based on ADC pot value
     if (syncTime - lastSyncTime >= syncInterval) {
@@ -111,7 +111,7 @@ void checkSync() {
 void checkSelector() {
     bool changed = false;
     byte state = 0;
-    for (int i = 0; i < ARRAY_LEN(selector); i++) {
+    for (size_t i = 0; i < ARRAY_LEN(selector); i++) {
         changed |= selector[i].toggled();
         state |= selector[i].active() << i;
     }

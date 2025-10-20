@@ -15,7 +15,7 @@
 #define TCS_INTEGRATION_TIME  TCS34725_INTEGRATIONTIME_101MS
 #define TCS_INTEGRATION_GAIN  TCS34725_GAIN_4X
 #define TCS_INTEGRATION_DELAY TCS_TIME_TO_DELAY(TCS_INTEGRATION_TIME)
-#define TCS_TIME_TO_DELAY(t)  time_ms((256 - (t)) * 12 / 5 + 1)
+#define TCS_TIME_TO_DELAY(it) time_ms((256 - (it)) * 12 / 5 + 1)
 
 #define COLOR_COUNT           7
 #define COLOR_C_THRESHOLD     160
@@ -48,7 +48,7 @@ enum Track : uint8_t {
     _TOTAL_TRACKS = A
 };
 
-enum PlayMode : uint8_t {
+enum PlayTiming : uint8_t {
     ON_SYNC = 1,
     SELF_TIMED,
 };
@@ -118,8 +118,8 @@ DfMp3 mp3{mp3Serial};
 Folder mp3Folder = MP3_DEFAULT_FOLDER;
 Track  mp3TrackMap[Color::_TOTAL_COLORS];  // Color → track no.
 
-PlayMode playMode;
-Timer1&  playTimer = Timer1::instance();
+PlayTiming playTiming;
+Timer1&    playTimer = Timer1::instance();
 
 void setup() {
     mp3TrackMap[Color::RED]    = Track::C_MAJOR;
@@ -160,14 +160,15 @@ void setup() {
         !(timedOut = millis() - syncStartTime >= CMD_SYNC_TIMEOUT)
     );
     if (syncRead) {
-        playMode = PlayMode::ON_SYNC;
+        playTiming = PlayTiming::ON_SYNC;
     } else {
-        playMode = PlayMode::SELF_TIMED;
+        playTiming = PlayTiming::SELF_TIMED;
         playTimer.begin(PLAY_TIMER_INTERVAL);
     }
-#if DEBUG >= 2
-    Serial.print("Playing in mode "); Serial.print(playMode);
-    Serial.print(" @ "); Serial.println(millis());
+#if DEBUG
+    Serial.print("[MP3] Playing ");
+    Serial.print((playTiming == PlayTiming::ON_SYNC) ? "on sync" : "self-timed");
+    Serial.print(" @ "); Serial.print(millis()); Serial.println("ms");
 #endif
 }
 
@@ -190,7 +191,7 @@ void loop() {
     }
 
     bool play = readCommands();  // Reads from motor_controller via Serial1
-    if (playMode == PlayMode::SELF_TIMED) {
+    if (playTiming == PlayTiming::SELF_TIMED) {
         play = playTimer.ready();
     }
     if (play && enqueuedColor != Color::NONE) {
@@ -213,8 +214,8 @@ void readRGBC(uint16_t& r, uint16_t& g, uint16_t& b, uint16_t& c) {
 
 // Non-blocking read, returns whether data was read and is available
 bool readRGBC_nb(uint16_t& r, uint16_t& g, uint16_t& b, uint16_t& c) {
-    static time_ms lastIntegrationTime = 0;
-    if (millis() - lastIntegrationTime < TCS_INTEGRATION_DELAY) {
+    static time_ms lastReadingTime;
+    if (millis() - lastReadingTime < TCS_INTEGRATION_DELAY) {
         return false;
     }
 
@@ -222,6 +223,7 @@ bool readRGBC_nb(uint16_t& r, uint16_t& g, uint16_t& b, uint16_t& c) {
     r = tcs.read16(TCS34725_RDATAL);
     g = tcs.read16(TCS34725_GDATAL);
     b = tcs.read16(TCS34725_BDATAL);
+    lastReadingTime = millis();
 #if DEBUG >= 2
     Serial.print("[TCS] ");
     Serial.print("R: "); Serial.print(r); Serial.print(", ");
@@ -229,7 +231,6 @@ bool readRGBC_nb(uint16_t& r, uint16_t& g, uint16_t& b, uint16_t& c) {
     Serial.print("B: "); Serial.print(b); Serial.print(", ");
     Serial.print("C: "); Serial.print(c); Serial.println();
 #endif
-    lastIntegrationTime = millis();
     return true;
 }
 
@@ -245,7 +246,7 @@ Color identifyColor(uint16_t r, uint16_t g, uint16_t b, uint16_t c) {
 #if DEBUG >= 2
     Serial.print("[TCS] Distances: ");
 #endif
-    for (int i = 0; i < COLOR_COUNT; i++) {
+    for (size_t i = 0; i < COLOR_COUNT; i++) {
         auto [color, rSample, gSample, bSample, cSample] = COLOR_SAMPLES[i];
         uint16_t dist = colorDistance(r, g, b, c, rSample, gSample, bSample, cSample);
         uint16_t cDist = abs(int16_t(c) - int16_t(cSample));
@@ -289,7 +290,7 @@ bool readCommands() {
         switch (Serial1.peek()) {
         case CMD_SYNC:
             readSync();
-            play |= playMode == PlayMode::ON_SYNC;
+            play |= playTiming == PlayTiming::ON_SYNC;
             break;
 
         case CMD_CHANGE_MODE:
