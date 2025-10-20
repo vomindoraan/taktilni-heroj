@@ -8,14 +8,14 @@
 
 #define SERIAL_BAUD_RATE    115200
 #define SW_SERIAL_BAUD_RATE 9600
-#define SERIAL_BEGIN_DELAY  2500
+#define SERIAL_BEGIN_DELAY  2500UL
 
 #define CMD_SYNC            'S'
-#define CMD_SYNC_TIMEOUT    5000
+#define CMD_SYNC_TIMEOUT    5000UL
 #define CMD_CHANGE_MODE     'M'
 #define CMD_CHANGE_MODE_FMT "M%d"
-#define CMD_CHANGE_MODE_SZ  8
+#define CMD_CHANGE_MODE_SZ  8U
 
-#define PLAY_TIMER_INTERVAL 250  // TODO: Determine best value
+#define PLAY_TIMER_INTERVAL 250UL  // TODO: Determine best value
 
 using time_ms = unsigned long;
