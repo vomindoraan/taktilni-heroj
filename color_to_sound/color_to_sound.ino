@@ -48,6 +48,11 @@ enum Track : uint8_t {
     _TOTAL_TRACKS = A
 };
 
+enum PlayMode : uint8_t {
+    ON_SYNC,
+    SELF_TIMED,
+};
+
 enum Color : uint16_t {
     NONE  = UINT16_MAX,
     BLACK = 0,
@@ -113,7 +118,8 @@ DfMp3 mp3{mp3Serial};
 Folder mp3Folder = MP3_DEFAULT_FOLDER;
 Track  mp3TrackMap[Color::_TOTAL_COLORS];  // Color → track no.
 
-Timer1& playTimer = Timer1::instance();
+PlayMode playMode;
+Timer1&  playTimer = Timer1::instance();
 
 void setup() {
     mp3TrackMap[Color::RED]    = Track::C_MAJOR;
@@ -148,23 +154,30 @@ void setup() {
     }
 #endif
 
+    // If motor_controller is sending sync commands, play is triggered on sync
+    // Otherwise, use a preset hardware timer to trigger play
+    bool syncRead, timedOut;
     time_t syncStartTime = millis();
     while (
-        !(Serial1.available() && Serial1.read() == CMD_SYNC) &&
-        millis() - syncStartTime < CMD_SYNC_TIMEOUT
+        !(syncRead = Serial1.available() && Serial1.read() == CMD_SYNC) &&
+        !(timedOut = millis() - syncStartTime >= CMD_SYNC_TIMEOUT)
     );
+    if (syncRead) {
+        playMode = PlayMode::ON_SYNC;
+    } else {
+        playMode = PlayMode::SELF_TIMED;
+        playTimer.begin(PLAY_TIMER_INTERVAL);
+    }
 #if DEBUG >= 2
     Serial.print("sync @ "); Serial.println(millis());
 #endif
-
-    playTimer.begin(PLAY_INTERVAL);
 }
 
 void loop() {
     static Color lastColor = Color::NONE;
     static Color enqueuedColor = Color::NONE;
 
-    readChangeMode();  // Reads from motor_controller via Serial1
+    bool shouldPlay = readCommands();  // Reads from motor_controller via Serial1
 
     uint16_t r, g, b, c;
     bool rgbcAvailable = readRGBC_nb(r, g, b, c);  // Reads from TCS34725 via I2C
@@ -182,9 +195,14 @@ void loop() {
         lastColor = color;
     }
 
-    if (playTimer.ready() && enqueuedColor != Color::NONE) {
-        playTrackFor(enqueuedColor);  // Writes to DFMiniMp3 via mp3Serial
-        enqueuedColor = Color::NONE;
+    if (enqueuedColor != Color::NONE) {
+        if (playMode == PlayMode::SELF_TIMED) {
+            shouldPlay = playTimer.ready();
+        }
+        if (shouldPlay) {
+            playTrackFor(enqueuedColor);  // Writes to DFMiniMp3 via mp3Serial
+            enqueuedColor = Color::NONE;
+        }
     }
 }
 
@@ -273,6 +291,32 @@ uint16_t colorDistance(
     int16_t gDiff = int16_t(g) - int16_t(gSample);
     int16_t bDiff = int16_t(b) - int16_t(bSample);
     return sqrt(sq(rDiff) + sq(gDiff) + sq(bDiff));
+}
+
+bool readCommands() {
+    while (Serial1.available()) {
+        switch (Serial1.peek()) {
+        case CMD_SYNC:
+            readSync();
+            return playMode == PlayMode::ON_SYNC;
+
+        case CMD_CHANGE_MODE:
+            readChangeMode();
+            return false;
+
+        default:
+            return false;
+        }
+    }
+}
+
+void readSync() {
+    // Consume consecutive commands
+    while (Serial1.available() && Serial1.read() == CMD_SYNC) {
+#if DEBUG >= 2
+        Serial.println("Sync")
+#endif
+    }
 }
 
 void readChangeMode() {

@@ -16,6 +16,6 @@
 #define CMD_CHANGE_MODE_FMT "M%d"
 #define CMD_CHANGE_MODE_SZ  8
 
-#define PLAY_INTERVAL 250  // TODO: Determine best value
+#define PLAY_TIMER_INTERVAL 250  // TODO: Determine best value
 
 using time_t = unsigned long;
