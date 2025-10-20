@@ -11,6 +11,11 @@
 #   define DEBUG     1  // 0–2
 #endif
 
+#define TCS_INTEGRATION_TIME  TCS34725_INTEGRATIONTIME_101MS
+#define TCS_INTEGRATION_GAIN  TCS34725_GAIN_4X
+#define TCS_INTEGRATION_DELAY TCS_TIME_TO_DELAY(TCS_INTEGRATION_TIME)
+#define TCS_TIME_TO_DELAY(t)  time_t((256 - (t)) * 12 / 5 + 1)
+
 #define COLOR_COUNT           7
 #define COLOR_C_THRESHOLD     160
 #define COLOR_DIST_THRESHOLD  15
@@ -96,7 +101,7 @@ uint16_t const COLOR_SAMPLES[COLOR_COUNT][5] = {
 #endif
 };
 
-Adafruit_TCS34725 tcs{TCS34725_INTEGRATIONTIME_101MS, TCS34725_GAIN_4X};
+Adafruit_TCS34725 tcs{TCS_INTEGRATION_TIME, TCS_INTEGRATION_GAIN};
 
 SoftwareSerial mp3Serial{MP3_SERIAL_RX_PIN, MP3_SERIAL_TX_PIN};
 
@@ -144,20 +149,23 @@ void loop() {
     readChangeMode();  // Reads from motor_controller via Serial1
 
     uint16_t r, g, b, c;
-    readRGBC(r, g, b, c);  // Reads from TCS34725 via I2C
+    bool rgbcAvailable = readRGBC_nb(r, g, b, c);  // Reads from TCS34725 via I2C
 
-    Color color = identifyColor(r, g, b, c);
-    if (color != Color::NONE) {
+    if (rgbcAvailable) {
+        Color color = identifyColor(r, g, b, c);
+        if (color != Color::NONE) {
 #if DEBUG
-        Serial.print("[TCS] Identified color "); Serial.println(color);
+            Serial.print("[TCS] Identified color "); Serial.println(color);
 #endif
-        if (color != lastColor) {
-            playTrackFor(color);  // Writes to DFMiniMp3 via mp3Serial
+            if (color != lastColor) {
+                playTrackFor(color);  // Writes to DFMiniMp3 via mp3Serial
+            }
         }
+        lastColor = color;
     }
-    lastColor = color;
 }
 
+// Blocking read, delays loop by TCS_INTEGRATION_DELAY
 void readRGBC(uint16_t& r, uint16_t& g, uint16_t& b, uint16_t& c) {
     tcs.getRawData(&r, &g, &b, &c);
 #if DEBUG >= 2
@@ -167,6 +175,29 @@ void readRGBC(uint16_t& r, uint16_t& g, uint16_t& b, uint16_t& c) {
     Serial.print("B: "); Serial.print(b); Serial.print(", ");
     Serial.print("C: "); Serial.print(c); Serial.println();
 #endif
+}
+
+// Non-blocking read, returns whether data was read and is available
+bool readRGBC_nb(uint16_t& r, uint16_t& g, uint16_t& b, uint16_t& c) {
+    static time_t lastIntegrationTime = 0;
+    if (millis() - lastIntegrationTime < TCS_INTEGRATION_DELAY) {
+        return false;
+    }
+
+    c = tcs.read16(TCS34725_CDATAL);
+    r = tcs.read16(TCS34725_RDATAL);
+    g = tcs.read16(TCS34725_GDATAL);
+    b = tcs.read16(TCS34725_BDATAL);
+#if DEBUG >= 2
+    Serial.print("[TCS] ");
+    Serial.print("R: "); Serial.print(r); Serial.print(", ");
+    Serial.print("G: "); Serial.print(g); Serial.print(", ");
+    Serial.print("B: "); Serial.print(b); Serial.print(", ");
+    Serial.print("C: "); Serial.print(c); Serial.println();
+#endif
+
+    lastIntegrationTime = millis();
+    return true;
 }
 
 Color identifyColor(uint16_t r, uint16_t g, uint16_t b, uint16_t c) {
