@@ -99,9 +99,9 @@ void loop() {
 }
 
 void checkSync() {
-    static time_t lastSyncTime = 0;
-    time_t syncTime = millis();
-    time_t syncInterval = PLAY_TIMER_INTERVAL;  // TODO: Scale based on ADC pot value
+    static time_ms lastSyncTime = 0;
+    time_ms syncTime = millis();
+    time_ms syncInterval = PLAY_TIMER_INTERVAL;  // TODO: Scale based on ADC pot value
     if (syncTime - lastSyncTime >= syncInterval) {
         sync();
         lastSyncTime = syncTime;

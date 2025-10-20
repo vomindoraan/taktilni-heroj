@@ -15,7 +15,7 @@
 #define TCS_INTEGRATION_TIME  TCS34725_INTEGRATIONTIME_101MS
 #define TCS_INTEGRATION_GAIN  TCS34725_GAIN_4X
 #define TCS_INTEGRATION_DELAY TCS_TIME_TO_DELAY(TCS_INTEGRATION_TIME)
-#define TCS_TIME_TO_DELAY(t)  time_t((256 - (t)) * 12 / 5 + 1)
+#define TCS_TIME_TO_DELAY(t)  time_ms((256 - (t)) * 12 / 5 + 1)
 
 #define COLOR_COUNT           7
 #define COLOR_C_THRESHOLD     160
@@ -152,9 +152,9 @@ void setup() {
 #endif
 
     // If motor_controller is sending sync commands, play is triggered on sync
-    // Otherwise, use a preset hardware timer to trigger play
+    // Otherwise, wait until timeout and use a preset HW timer to trigger play
     bool syncRead, timedOut;
-    time_t syncStartTime = millis();
+    time_ms syncStartTime = millis();
     while (
         !(syncRead = Serial1.available() && Serial1.read() == CMD_SYNC) &&
         !(timedOut = millis() - syncStartTime >= CMD_SYNC_TIMEOUT)
@@ -213,7 +213,7 @@ void readRGBC(uint16_t& r, uint16_t& g, uint16_t& b, uint16_t& c) {
 
 // Non-blocking read, returns whether data was read and is available
 bool readRGBC_nb(uint16_t& r, uint16_t& g, uint16_t& b, uint16_t& c) {
-    static time_t lastIntegrationTime = 0;
+    static time_ms lastIntegrationTime = 0;
     if (millis() - lastIntegrationTime < TCS_INTEGRATION_DELAY) {
         return false;
     }

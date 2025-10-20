@@ -1,6 +1,6 @@
 #pragma once
 
-using time_t = unsigned long;
+using time_ms = unsigned long;
 
 struct Switch {
     byte const pin;
@@ -20,15 +20,15 @@ struct Switch {
 
 class DebouncedButton : public Switch {
 private:
-    bool   state;
-    bool   lastReading;
-    bool   wasPressed;
-    time_t debounceDelay;
-    time_t lastReadingTime;
-    time_t lastDebounceTime;
+    bool    state;
+    bool    lastReading;
+    bool    wasPressed;
+    time_ms debounceDelay;
+    time_ms lastReadingTime;
+    time_ms lastDebounceTime;
 
 public:
-    DebouncedButton(byte pin, bool activeState = LOW, time_t debounceDelay = 50) :
+    DebouncedButton(byte pin, bool activeState = LOW, time_ms debounceDelay = 50) :
         Switch{pin, activeState},
         state{!activeState},
         lastReading{!activeState},

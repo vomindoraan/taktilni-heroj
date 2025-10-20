@@ -18,4 +18,4 @@
 
 #define PLAY_TIMER_INTERVAL 250  // TODO: Determine best value
 
-using time_t = unsigned long;
+using time_ms = unsigned long;

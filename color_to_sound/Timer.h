@@ -1,6 +1,6 @@
 #pragma once
 
-using time_t = unsigned long;
+using time_ms = unsigned long;
 
 ISR(TIMER1_COMPA_vect);
 
@@ -11,7 +11,7 @@ public:
         return i;
     }
 
-    void begin(time_t interval);
+    void begin(time_ms interval);
     bool ready();  // Read and reset flag
 
     friend void TIMER1_COMPA_vect(void);

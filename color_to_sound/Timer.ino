@@ -1,6 +1,6 @@
 #include "Timer.h"
 
-void Timer1::begin(time_t interval) {
+void Timer1::begin(time_ms interval) {
     uint16_t ocr = F_CPU / 256 * interval / 1000 - 1;
     noInterrupts();
     flag = false;
