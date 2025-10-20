@@ -11,6 +11,11 @@
 #define SERIAL_BEGIN_DELAY  2500
 
 #define CMD_SYNC            'S'
+#define CMD_SYNC_TIMEOUT    5000
 #define CMD_CHANGE_MODE     'M'
 #define CMD_CHANGE_MODE_FMT "M%d"
 #define CMD_CHANGE_MODE_SZ  8
+
+#define PLAY_INTERVAL 250  // TODO: Determine best value
+
+using time_t = unsigned long;

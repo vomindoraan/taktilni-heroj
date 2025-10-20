@@ -78,10 +78,12 @@ void setup() {
     Serial.begin(SERIAL_BAUD_RATE);   // USB serial for logging
     Serial1.begin(SERIAL_BAUD_RATE);  // HW serial to color_to_sound
     delay(SERIAL_BEGIN_DELAY);
+
+    delay(1000);  // TODO
+    sync();
 }
 
 void loop() {
-    checkSync();
     checkSelector();
 
     if (switchForward.active()) {
@@ -95,10 +97,6 @@ void loop() {
     } else {
         stop();
     }
-}
-
-void checkSync() {
-    
 }
 
 void checkSelector() {
@@ -137,7 +135,7 @@ void stop() {
 }
 
 void sync() {
-    Serial1.print(CMD_READ_COLOR);
+    Serial1.print(CMD_SYNC);
 #if DEBUG >= 2
     Serial.println("Sync");
 #endif

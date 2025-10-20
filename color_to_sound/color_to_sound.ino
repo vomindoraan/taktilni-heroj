@@ -3,6 +3,7 @@
 #include <SoftwareSerial.h>
 
 #include "common.h"
+#include "Timer.h"
 
 #ifndef SENSOR_NO
 #   define SENSOR_NO 1  // 1–4
@@ -112,6 +113,8 @@ DfMp3 mp3{mp3Serial};
 Folder mp3Folder = MP3_DEFAULT_FOLDER;
 Track  mp3TrackMap[Color::_TOTAL_COLORS];  // Color → track no.
 
+Timer1& playTimer = Timer1::instance();
+
 void setup() {
     mp3TrackMap[Color::RED]    = Track::C_MAJOR;
     mp3TrackMap[Color::GREEN]  = Track::G_MAJOR;
@@ -125,6 +128,9 @@ void setup() {
     Serial1.begin(SERIAL_BAUD_RATE);       // HW serial from motor_controller
     mp3Serial.begin(SW_SERIAL_BAUD_RATE);  // SW serial to/from DFMiniMp3
     delay(SERIAL_BEGIN_DELAY);
+#if DEBUG >= 2
+    Serial.print("serial @ "); Serial.println(millis());
+#endif
 
     mp3.begin(SW_SERIAL_BAUD_RATE);
 #if DEBUG
@@ -141,10 +147,22 @@ void setup() {
         Serial.println("[TCS] Sensor " STR(SENSOR_NO) " online");
     }
 #endif
+
+    time_t syncStartTime = millis();
+    while (
+        !(Serial1.available() && Serial1.read() == CMD_SYNC) &&
+        millis() - syncStartTime < CMD_SYNC_TIMEOUT
+    );
+#if DEBUG >= 2
+    Serial.print("sync @ "); Serial.println(millis());
+#endif
+
+    playTimer.begin(PLAY_INTERVAL);
 }
 
 void loop() {
     static Color lastColor = Color::NONE;
+    static Color enqueuedColor = Color::NONE;
 
     readChangeMode();  // Reads from motor_controller via Serial1
 
@@ -158,10 +176,15 @@ void loop() {
             Serial.print("[TCS] Identified color "); Serial.println(color);
 #endif
             if (color != lastColor) {
-                playTrackFor(color);  // Writes to DFMiniMp3 via mp3Serial
+                enqueuedColor = color;
             }
         }
         lastColor = color;
+    }
+
+    if (playTimer.ready() && enqueuedColor != Color::NONE) {
+        playTrackFor(enqueuedColor);  // Writes to DFMiniMp3 via mp3Serial
+        enqueuedColor = Color::NONE;
     }
 }
 
@@ -252,18 +275,10 @@ uint16_t colorDistance(
     return sqrt(sq(rDiff) + sq(gDiff) + sq(bDiff));
 }
 
-void readCommand() {
-    if (Serial1.available()) {
-        switch (Serial1.read()) {
-
-        }
-    }
-}
-
 void readChangeMode() {
     int mode = 0;
     // Consume consecutive commands, keep latest (format: "M%d")
-    while (Serial1.available() && Serial1.read() == CHANGE_MODE_CMD) {
+    while (Serial1.available() && Serial1.read() == CMD_CHANGE_MODE) {
         mode = Serial1.parseInt(SKIP_NONE);
     }
 
