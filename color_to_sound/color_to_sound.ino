@@ -192,7 +192,7 @@ void loop() {
 
     bool play = readCommands();  // Reads from motor_controller via Serial1
     if (playTiming == PlayTiming::SELF_TIMED) {
-        play = playTimer.ready();
+        play = playTimer.elapsed();
     }
     if (play && enqueuedColor != Color::NONE) {
         playTrackFor(enqueuedColor);  // Writes to DFMiniMp3 via mp3Serial

@@ -13,7 +13,7 @@ void Timer1::begin(time_ms period) {
     interrupts();
 }
 
-bool Timer1::ready() {
+bool Timer1::elapsed() {
     noInterrupts();
     bool flagValue = flag;
     flag = false;

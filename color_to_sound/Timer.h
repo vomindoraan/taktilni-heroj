@@ -12,7 +12,7 @@ public:
     }
 
     void begin(time_ms period);
-    bool ready();  // Read and reset flag
+    bool elapsed();  // Read and reset flag
 
     friend void TIMER1_COMPA_vect(void);
 
