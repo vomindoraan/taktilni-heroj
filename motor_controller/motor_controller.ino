@@ -118,15 +118,11 @@ void loop() {
 }
 
 void checkSync() {
-    static time_ms lastSyncTime;
-    static time_ms syncPeriod = SYNC_PERIOD_LOW;
+    static time_ms lastReadingTime, lastSyncTime, syncPeriod;
+    time_ms currTime = millis();
 
-    time_ms syncTime = millis();
-    if (syncTime - lastSyncTime >= syncPeriod) {
-        sync();
-        lastSyncTime = syncTime;
-
-        // Update sync period based on pot ADC (lower value = higher speed)
+    // Update period/BPM based on pot ADC (lower value = higher speed)
+    if (currTime - lastReadingTime >= SYNC_PERIOD_LOW) {
         int reading = analogRead(POT_SPEED_PIN);
         syncPeriod = map(
             constrain(reading, 0, 1023),
@@ -136,6 +132,12 @@ void checkSync() {
 #if USE_DISPLAY
         display.showNumberDec(BPM(syncPeriod));
 #endif
+        lastReadingTime = currTime;
+    }
+
+    if (currTime - lastSyncTime >= syncPeriod) {
+        sync();
+        lastSyncTime = currTime;
     }
 }
 
