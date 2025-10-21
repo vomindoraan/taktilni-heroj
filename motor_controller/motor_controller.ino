@@ -101,19 +101,19 @@ void loop() {
 
 void checkSync() {
     static time_ms lastSyncTime;
-    static time_ms syncPeriod = SYNC_PERIOD_SLOW;
+    static time_ms syncPeriod = SYNC_PERIOD_FAST;
 
     time_ms syncTime = millis();
     if (syncTime - lastSyncTime >= syncPeriod) {
         sync();
         lastSyncTime = syncTime;
 
-        // Update sync period based on pot ADC value
-        int speed = analogRead(POT_SPEED_PIN);
+        // Update sync period based on pot ADC (lower value = higher speed)
+        int reading = analogRead(POT_SPEED_PIN);
         syncPeriod = map(
-            constrain(speed, 0, 1023),
+            constrain(reading, 0, 1023),
             0, 1023,
-            SYNC_PERIOD_SLOW, SYNC_PERIOD_FAST
+            SYNC_PERIOD_FAST, SYNC_PERIOD_SLOW
         );
     }
 }
