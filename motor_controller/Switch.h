@@ -21,17 +21,17 @@ private:
     bool    state;
     bool    lastReading;
     bool    wasPressed;
-    time_ms debounceDelay;
+    time_ms debouncePeriod;
     time_ms lastReadingTime;
     time_ms lastDebounceTime;
 
 public:
-    DebouncedButton(byte pin, bool activeState = LOW, time_ms debounceDelay = 50) :
+    DebouncedButton(byte pin, bool activeState = LOW, time_ms debouncePeriod = 50) :
         Switch{pin, activeState},
         state{!activeState},
         lastReading{!activeState},
         wasPressed{false},
-        debounceDelay{debounceDelay},
+        debouncePeriod{debouncePeriod},
         lastReadingTime{0},
         lastDebounceTime{0}
     {}

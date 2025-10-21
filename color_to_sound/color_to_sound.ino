@@ -12,10 +12,10 @@
 #   define DEBUG     1  // 0–3
 #endif
 
-#define TCS_INTEGRATION_TIME  TCS34725_INTEGRATIONTIME_101MS
-#define TCS_INTEGRATION_GAIN  TCS34725_GAIN_4X
-#define TCS_INTEGRATION_DELAY TCS_TIME_TO_DELAY(TCS_INTEGRATION_TIME)
-#define TCS_TIME_TO_DELAY(it) time_ms((256 - (it)) * 12 / 5 + 1)
+#define TCS_INTEGRATION_TIME   TCS34725_INTEGRATIONTIME_101MS
+#define TCS_INTEGRATION_GAIN   TCS34725_GAIN_4X
+#define TCS_INTEGRATION_PERIOD TCS_TIME_TO_PERIOD(TCS_INTEGRATION_TIME)
+#define TCS_TIME_TO_PERIOD(it) time_ms((256 - (it)) * 12 / 5 + 1)
 
 #define COLOR_COUNT           7
 #define COLOR_C_THRESHOLD     160
@@ -200,7 +200,7 @@ void loop() {
     }
 }
 
-// Blocking read, delays loop by TCS_INTEGRATION_DELAY
+// Blocking read, delays loop by TCS_INTEGRATION_PERIOD
 void readRGBC(uint16_t& r, uint16_t& g, uint16_t& b, uint16_t& c) {
     tcs.getRawData(&r, &g, &b, &c);
 #if DEBUG >= 3
@@ -215,7 +215,7 @@ void readRGBC(uint16_t& r, uint16_t& g, uint16_t& b, uint16_t& c) {
 // Non-blocking read, returns whether data was read and is available
 bool readRGBC_nb(uint16_t& r, uint16_t& g, uint16_t& b, uint16_t& c) {
     static time_ms lastReadingTime;
-    if (millis() - lastReadingTime < TCS_INTEGRATION_DELAY) {
+    if (millis() - lastReadingTime < TCS_INTEGRATION_PERIOD) {
         return false;
     }
 

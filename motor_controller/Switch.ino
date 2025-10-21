@@ -5,7 +5,7 @@ bool Switch::active() const {
 }
 
 bool DebouncedButton::active() const {
-    return (millis() - lastReadingTime < debounceDelay)
+    return (millis() - lastReadingTime < debouncePeriod)
         ? state == activeState
         : Switch::active();
 }
@@ -18,7 +18,7 @@ bool DebouncedButton::pressed() {
     if (reading != lastReading) {
         lastDebounceTime = lastReadingTime;
     }
-    if (lastReadingTime - lastDebounceTime >= debounceDelay && reading != state) {
+    if (lastReadingTime - lastDebounceTime >= debouncePeriod && reading != state) {
         state = reading;
     }
     lastReading = reading;
