@@ -9,7 +9,7 @@
 #   define SENSOR_NO 1  // 1–4
 #endif
 #ifndef DEBUG
-#   define DEBUG     1  // 0–2
+#   define DEBUG     1  // 0–3
 #endif
 
 #define TCS_INTEGRATION_TIME  TCS34725_INTEGRATIONTIME_101MS
@@ -203,7 +203,7 @@ void loop() {
 // Blocking read, delays loop by TCS_INTEGRATION_DELAY
 void readRGBC(uint16_t& r, uint16_t& g, uint16_t& b, uint16_t& c) {
     tcs.getRawData(&r, &g, &b, &c);
-#if DEBUG >= 2
+#if DEBUG >= 3
     Serial.print("[TCS] ");
     Serial.print("R: "); Serial.print(r); Serial.print(", ");
     Serial.print("G: "); Serial.print(g); Serial.print(", ");
@@ -224,7 +224,7 @@ bool readRGBC_nb(uint16_t& r, uint16_t& g, uint16_t& b, uint16_t& c) {
     g = tcs.read16(TCS34725_GDATAL);
     b = tcs.read16(TCS34725_BDATAL);
     lastReadingTime = millis();
-#if DEBUG >= 2
+#if DEBUG >= 3
     Serial.print("[TCS] ");
     Serial.print("R: "); Serial.print(r); Serial.print(", ");
     Serial.print("G: "); Serial.print(g); Serial.print(", ");
@@ -243,14 +243,14 @@ Color identifyColor(uint16_t r, uint16_t g, uint16_t b, uint16_t c) {
     Color bestMatch = Color::NONE;
     uint16_t bestMatchDist = UINT16_MAX;
     uint16_t bestMatchCDist = UINT16_MAX;
-#if DEBUG >= 2
+#if DEBUG >= 3
     Serial.print("[TCS] Distances: ");
 #endif
     for (size_t i = 0; i < COLOR_COUNT; i++) {
         auto [color, rSample, gSample, bSample, cSample] = COLOR_SAMPLES[i];
         uint16_t dist = colorDistance(r, g, b, c, rSample, gSample, bSample, cSample);
         uint16_t cDist = abs(int16_t(c) - int16_t(cSample));
-#if DEBUG >= 2
+#if DEBUG >= 3
         Serial.print(dist); Serial.print("/"); Serial.print(cDist);
         Serial.print((i < COLOR_COUNT-1) ? ", " : "\n");
 #endif
