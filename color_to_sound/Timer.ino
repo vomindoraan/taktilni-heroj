@@ -1,7 +1,7 @@
 #include "Timer.h"
 
-void Timer1::begin(time_ms interval) {
-    uint16_t ocr = F_CPU / 256 * interval / 1000 - 1;
+void Timer1::begin(time_ms period) {
+    uint16_t ocr = F_CPU / 256 * period / 1000 - 1;
     noInterrupts();
     flag = false;
     TCCR1A = TCCR1B = 0;     // Clear control registers
