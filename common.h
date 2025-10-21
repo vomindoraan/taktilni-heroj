@@ -13,10 +13,12 @@
 #define CMD_SYNC        'S'
 #define CMD_CHANGE_MODE 'M'
 
-// TODO: Determine best values
 #define SYNC_TIMEOUT     5000UL
-#define SYNC_PERIOD_SLOW 1000UL  // 60 BPM
-#define SYNC_PERIOD_FAST 300UL   // 200 BPM
+#define SYNC_BPM_SLOW    60
+#define SYNC_BPM_FAST    200
+#define SYNC_PER_BEAT    2
+#define SYNC_PERIOD_SLOW (60000UL / SYNC_BPM_SLOW / SYNC_PER_BEAT)
+#define SYNC_PERIOD_FAST (60000UL / SYNC_BPM_FAST / SYNC_PER_BEAT)
 #define SYNC_PERIOD_MEAN ((SYNC_PERIOD_SLOW + SYNC_PERIOD_FAST) / 2)
 
 using time_ms = unsigned long;
