@@ -1,9 +1,9 @@
+#include "common.h"
+#include "Timer.h"
+
 #include <Adafruit_TCS34725.h>
 #include <DFMiniMp3.h>
 #include <SoftwareSerial.h>
-
-#include "common.h"
-#include "Timer.h"
 
 #ifndef SENSOR_NO
 #   define SENSOR_NO 1  // 1–4

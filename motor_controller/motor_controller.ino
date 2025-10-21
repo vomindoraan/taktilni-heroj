@@ -1,8 +1,11 @@
 #include "common.h"
 #include "Switch.h"
 
-#ifndef DEBUG
-#   define DEBUG 1  // 0–2
+#ifndef USE_DISPLAY
+#   define USE_DISPLAY false
+#endif
+#if USE_DISPLAY
+#   include <TM1637Display.h>
 #endif
 
 #define GENERIC_TL_5WAY  '5'  // Generic Telecaster 5-way lever switch (KP)
@@ -12,18 +15,26 @@
 #   define SELECTOR_TYPE OAKGRIGSBY_6WAY
 #endif
 
+#ifndef DEBUG
+#   define DEBUG 1  // 0–2
+#endif
+
 #define MOTOR_POWER_PIN     21
 #define MOTOR_DIRECTION_PIN 20
 #define POT_SPEED_PIN       19
 #define SWITCH_FORWARD_PIN  9
 #define SWITCH_REVERSE_PIN  8
-#define BUTTON_FORWARD_PIN  16
-#define BUTTON_REVERSE_PIN  15
+#define BUTTON_FORWARD_PIN  7
+#define BUTTON_REVERSE_PIN  6
 #define SELECTOR_PIN1       2
 #define SELECTOR_PIN2       3
 #define SELECTOR_PIN3       4
 #if SELECTOR_TYPE == OAKGRIGSBY_6WAY
 #   define SELECTOR_PIN4    5
+#endif
+#if USE_DISPLAY
+#   define DISPLAY_CLK_PIN  15
+#   define DISPLAY_DIO_PIN  14
 #endif
 
 Switch switchForward = {SWITCH_FORWARD_PIN};
@@ -41,6 +52,10 @@ Button selector[] = {
 };
 
 int modeMap[1<<ARRLEN(selector)];  // Selector state → mode
+
+#if USE_DISPLAY
+TM1637Display display{DISPLAY_CLK_PIN, DISPLAY_DIO_PIN};
+#endif
 
 void setup() {
     pinMode(MOTOR_POWER_PIN,     OUTPUT);
@@ -75,6 +90,9 @@ void setup() {
 #endif
 
     stop();  // Prevent movement at startup
+#if USE_DISPLAY
+    display.clear();
+#endif
 
     Serial.begin(SERIAL_BAUD_RATE);   // USB serial for logging
     Serial1.begin(SERIAL_BAUD_RATE);  // HW serial to color_to_sound
@@ -115,6 +133,9 @@ void checkSync() {
             0, 1023,
             SYNC_PERIOD_LOW, SYNC_PERIOD_HIGH
         );
+#if USE_DISPLAY
+        display.showNumberDec(BPM(syncPeriod));
+#endif
     }
 }
 
