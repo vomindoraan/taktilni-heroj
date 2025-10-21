@@ -101,7 +101,7 @@ void loop() {
 
 void checkSync() {
     static time_ms lastSyncTime;
-    static time_ms syncPeriod = SYNC_PERIOD_FAST;
+    static time_ms syncPeriod = SYNC_PERIOD_LOW;
 
     time_ms syncTime = millis();
     if (syncTime - lastSyncTime >= syncPeriod) {
@@ -113,7 +113,7 @@ void checkSync() {
         syncPeriod = map(
             constrain(reading, 0, 1023),
             0, 1023,
-            SYNC_PERIOD_FAST, SYNC_PERIOD_SLOW
+            SYNC_PERIOD_LOW, SYNC_PERIOD_HIGH
         );
     }
 }

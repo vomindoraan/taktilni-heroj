@@ -163,7 +163,7 @@ void setup() {
         playTiming = PlayTiming::ON_SYNC;
     } else {
         playTiming = PlayTiming::SELF_TIMED;
-        playTimer.begin(SYNC_PERIOD_MEAN);
+        playTimer.begin(SYNC_PERIOD_AVG);
     }
 #if DEBUG
     Serial.print("[MP3] Playing ");
