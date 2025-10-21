@@ -53,8 +53,8 @@ enum PlayTiming : uint8_t {
     SELF_TIMED,
 };
 
-enum Color : uint16_t {
-    NONE  = UINT16_MAX,
+enum Color : uint8_t {
+    NONE  = UINT8_MAX,
     BLACK = 0,
     RED,
     GREEN,
