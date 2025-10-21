@@ -130,6 +130,22 @@ void checkSelector() {
     }
 }
 
+void sync() {
+    Serial1.print(CMD_SYNC);
+#if DEBUG
+    Serial.println("Sync");
+#endif
+}
+
+void changeMode(int mode) {
+    char cmd[CMD_CHANGE_MODE_SZ];
+    snprintf(cmd, CMD_CHANGE_MODE_SZ, CMD_CHANGE_MODE_FMT, mode);
+    Serial1.print(cmd);
+#if DEBUG
+    Serial.print("Mode "); Serial.println(mode);
+#endif
+}
+
 void forward() {
     digitalWrite(MOTOR_POWER_PIN,     LOW);
     digitalWrite(MOTOR_DIRECTION_PIN, HIGH);
@@ -150,21 +166,5 @@ void stop() {
     digitalWrite(MOTOR_POWER_PIN, HIGH);
 #if DEBUG >= 2
     Serial.println("Stop");
-#endif
-}
-
-void sync() {
-    Serial1.print(CMD_SYNC);
-#if DEBUG
-    Serial.println("Sync");
-#endif
-}
-
-void changeMode(int mode) {
-    char cmd[CMD_CHANGE_MODE_SZ];
-    snprintf(cmd, CMD_CHANGE_MODE_SZ, CMD_CHANGE_MODE_FMT, mode);
-    Serial1.print(cmd);
-#if DEBUG
-    Serial.print("Mode "); Serial.println(mode);
 #endif
 }
