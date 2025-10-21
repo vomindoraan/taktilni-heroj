@@ -26,7 +26,15 @@ private:
     time_ms lastDebounceTime;
 
 public:
-    DebouncedButton(byte pin, bool activeState = LOW, time_ms debounceDelay = 50);
+    DebouncedButton(byte pin, bool activeState = LOW, time_ms debounceDelay = 50) :
+        Switch{pin, activeState},
+        state{!activeState},
+        lastReading{!activeState},
+        wasPressed{false},
+        debounceDelay{debounceDelay},
+        lastReadingTime{0},
+        lastDebounceTime{0}
+    {}
 
     bool active() const override;
     bool pressed();

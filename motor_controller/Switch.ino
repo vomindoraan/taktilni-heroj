@@ -4,16 +4,6 @@ bool Switch::active() const {
     return digitalRead(pin) == activeState;
 }
 
-DebouncedButton::DebouncedButton(byte pin, bool activeState, time_ms debounceDelay) :
-    Switch{pin, activeState},
-    state{!activeState},
-    lastReading{!activeState},
-    wasPressed{false},
-    debounceDelay{debounceDelay},
-    lastReadingTime{0},
-    lastDebounceTime{0}
-{}
-
 bool DebouncedButton::active() const {
     return (millis() - lastReadingTime < debounceDelay)
         ? state == activeState
