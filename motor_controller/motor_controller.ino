@@ -131,14 +131,14 @@ void checkSelector() {
 }
 
 void sync() {
-    Serial1.print(CMD_SYNC);
+    Serial1.write(CMD_SYNC);
 #if DEBUG
     Serial.println("Sync");
 #endif
 }
 
 void changeMode(int mode) {
-    Serial1.print(CMD_CHANGE_MODE);
+    Serial1.write(CMD_CHANGE_MODE);
     Serial1.print(mode);
 #if DEBUG
     Serial.print("Mode "); Serial.println(mode);
