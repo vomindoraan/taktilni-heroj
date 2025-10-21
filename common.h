@@ -14,8 +14,9 @@
 #define CMD_CHANGE_MODE 'M'
 
 // TODO: Determine best values
-#define SYNC_PERIOD_SLOW 500UL
-#define SYNC_PERIOD_FAST 150UL
 #define SYNC_TIMEOUT     5000UL
+#define SYNC_PERIOD_SLOW 1000UL  // 60 BPM
+#define SYNC_PERIOD_FAST 300UL   // 200 BPM
+#define SYNC_PERIOD_MEAN ((SYNC_PERIOD_SLOW + SYNC_PERIOD_FAST) / 2)
 
 using time_ms = unsigned long;
