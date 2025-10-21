@@ -138,9 +138,8 @@ void sync() {
 }
 
 void changeMode(int mode) {
-    char cmd[CMD_CHANGE_MODE_SZ];
-    snprintf(cmd, CMD_CHANGE_MODE_SZ, CMD_CHANGE_MODE_FMT, mode);
-    Serial1.print(cmd);
+    Serial1.print(CMD_CHANGE_MODE);
+    Serial1.print(mode);
 #if DEBUG
     Serial.print("Mode "); Serial.println(mode);
 #endif

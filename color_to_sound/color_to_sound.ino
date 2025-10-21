@@ -157,7 +157,7 @@ void setup() {
     time_ms syncStartTime = millis();
     while (
         !(syncRead = Serial1.available() && Serial1.read() == CMD_SYNC) &&
-        !(timedOut = millis() - syncStartTime >= CMD_SYNC_TIMEOUT)
+        !(timedOut = millis() - syncStartTime >= SYNC_TIMEOUT)
     );
     if (syncRead) {
         playTiming = PlayTiming::ON_SYNC;
