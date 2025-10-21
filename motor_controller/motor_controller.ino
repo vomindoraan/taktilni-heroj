@@ -40,7 +40,7 @@ Button selector[] = {
 #endif
 };
 
-int modeMap[1<<ARRAY_LEN(selector)];  // Selector state → mode
+int modeMap[1<<ARRLEN(selector)];  // Selector state → mode
 
 void setup() {
     pinMode(MOTOR_POWER_PIN,     OUTPUT);
@@ -121,7 +121,7 @@ void checkSync() {
 void checkSelector() {
     bool changed = false;
     byte state = 0;
-    for (size_t i = 0; i < ARRAY_LEN(selector); i++) {
+    for (size_t i = 0; i < ARRLEN(selector); i++) {
         changed |= selector[i].toggled();
         state |= selector[i].active() << i;
     }

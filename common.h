@@ -1,8 +1,8 @@
 #pragma once
 
-#define _STR(x)      #x
-#define STR(x)       _STR(x)
-#define ARRAY_LEN(a) (sizeof (a) / sizeof *(a))
+#define _STR(x)   #x
+#define STR(x)    _STR(x)
+#define ARRLEN(a) (sizeof (a) / sizeof *(a))
 
 #define WAIT_FOREVER() for (;;) delay(100UL)
 
