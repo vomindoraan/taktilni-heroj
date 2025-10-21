@@ -22,20 +22,22 @@ bool DebouncedButton::active() const {
 
 bool DebouncedButton::pressed() {
     wasPressed = state == activeState;
+
     bool reading = digitalRead(pin);
     lastReadingTime = millis();
     if (reading != lastReading) {
         lastDebounceTime = lastReadingTime;
     }
-    if (lastReadingTime - lastDebounceTime > debounceDelay && reading != state) {
+    if (lastReadingTime - lastDebounceTime >= debounceDelay && reading != state) {
         state = reading;
     }
     lastReading = reading;
+
     return state == activeState;
 }
 
 bool DebouncedButton::toggled() {
-    return pressed() ^ wasPressed;
+    return pressed() != wasPressed;
 }
 
 bool DebouncedButton::toggledOn() {
