@@ -51,7 +51,7 @@ Button selector[] = {
 #endif
 };
 
-int modeMap[1<<ARRLEN(selector)];  // Selector state → mode
+mode_t modeMap[1<<ARRLEN(selector)];  // Selector state → mode
 
 #if USE_DISPLAY
 TM1637Display display{DISPLAY_CLK_PIN, DISPLAY_DIO_PIN};
@@ -160,7 +160,7 @@ void sync() {
 #endif
 }
 
-void changeMode(int mode) {
+void changeMode(mode_t mode) {
     Serial1.write(CMD_CHANGE_MODE);
     Serial1.print(mode);
 #if DEBUG

@@ -21,3 +21,4 @@
 #define BPM(p) (30000UL / (p))  // 4/4 time
 
 using time_ms = unsigned long;
+using mode_t  = byte;

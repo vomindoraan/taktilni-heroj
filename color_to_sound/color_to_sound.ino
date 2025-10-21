@@ -314,7 +314,7 @@ void readSync() {
 }
 
 void readChangeMode() {
-    int mode = 0;
+    mode_t mode = 0;
     // Consume consecutive commands, keep latest (format: "M%d")
     while (Serial1.available() && Serial1.read() == CMD_CHANGE_MODE) {
         mode = Serial1.parseInt(SKIP_NONE);
