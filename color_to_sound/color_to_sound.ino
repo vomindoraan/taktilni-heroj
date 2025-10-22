@@ -130,12 +130,11 @@ void setup() {
     mp3TrackMap[Color::ORANGE] = Track::D;
     mp3TrackMap[Color::PINK]   = Track::A;
 
-    Serial.begin(SERIAL_BAUD_RATE);        // USB serial for logging
-    Serial1.begin(SERIAL_BAUD_RATE);       // HW serial from motor_controller
-    mp3Serial.begin(SW_SERIAL_BAUD_RATE);  // SW serial to/from DFMiniMp3
+    Serial.begin(SERIAL_BAUD_RATE);   // USB serial for logging
+    Serial1.begin(SERIAL_BAUD_RATE);  // HW serial from motor_controller
+    mp3.begin(SW_SERIAL_BAUD_RATE);   // SW serial to/from DFMiniMp3
     delay(SERIAL_BEGIN_DELAY);
 
-    mp3.begin(SW_SERIAL_BAUD_RATE);
 #if DEBUG
     mp3.reset();
 #endif
