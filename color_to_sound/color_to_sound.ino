@@ -69,7 +69,7 @@ enum Color : uint8_t {
     _TOTAL_COLORS
 };
 
-uint16_t const COLOR_SAMPLES[COLOR_COUNT][5] = {
+uint16_t const COLOR_SAMPLES[COLOR_COUNT][5] = {  // 101ms integration, 4x gain
 #if SENSOR_NO == 1
     {Color::RED,    153, 52,  39,  242},
     {Color::GREEN,  77,  118, 67,  264},
