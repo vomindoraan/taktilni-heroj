@@ -131,13 +131,21 @@ void checkSync() {
             SYNC_PERIOD_LOW, SYNC_PERIOD_HIGH
         );
 #if USE_DISPLAY
-        display.showNumberDec(BPM(syncPeriod));
+        uint8_t bpm = constrain(BPM(syncPeriod), 0, 255);
+        display.showNumberDec(bpm, false, 3, 1);
 #endif
     }
 
     if (currTime - lastSyncTime >= syncPeriod) {
         sync();
         lastSyncTime = currTime;
+#if USE_DISPLAY
+        static bool drawTop;  // Segments:  gfedcba
+        static uint8_t const boxTop[] = {0b01100011};
+        static uint8_t const boxBtm[] = {0b01011100};
+        display.setSegments(drawTop ? boxTop : boxBtm, 1, 0);
+        drawTop = !drawTop;
+#endif
     }
 }
 
