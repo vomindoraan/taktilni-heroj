@@ -1,11 +1,15 @@
 @echo off
 rem Workaround for Arduino IDE's lackluster project file system
-cd ..\color_to_sound
-del /q .\common.h
-mklink .\common.h ..\common.h
-cd ..\motor_controller
-del /q .\common.h
-mklink .\common.h ..\common.h
 
-rem New-Item -Force -ItemType SymbolicLink -Value .\common.h -Path .\color_to_sound\common.h
-rem New-Item -Force -ItemType SymbolicLink -Value .\common.h -Path .\motor_controller\common.h
+cd "%~dp0"
+
+set src_dir=..
+set dst_dirs=..\color_to_sound ..\motor_controller
+set files=common.h
+
+for %%d in (%dst_dirs%) do (
+    for %%f in (%files%) do (
+        del /q %%d\%%f
+        mklink %%d\%%f %src_dir%\%%f
+    )
+)
