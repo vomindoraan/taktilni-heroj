@@ -1,11 +1,22 @@
 #include "common.h"
 #include "Switch.h"
 
-#ifndef USE_DISPLAY
-#   define USE_DISPLAY false
+#ifndef DEBUG
+#   define DEBUG 1  // 0–2
 #endif
-#if USE_DISPLAY
+
+#ifndef DISPLAY_BPM
+#   define DISPLAY_BPM true
+#endif
+#if DISPLAY_BPM
 #   include <TM1637Display.h>
+#endif
+
+#ifndef SEND_MIDI
+#   define SEND_MIDI true
+#endif
+#if SEND_MIDI
+#   include <USB-MIDI.h>
 #endif
 
 #define GENERIC_TL_5WAY  '5'  // Generic Telecaster 5-way lever switch (KP)
@@ -13,10 +24,6 @@
 #define FIREFEEL_ST_5WAY 'F'  // Firefeel ST01 Stratocaster 5-way lever switch
 #ifndef SELECTOR_TYPE
 #   define SELECTOR_TYPE OAKGRIGSBY_6WAY
-#endif
-
-#ifndef DEBUG
-#   define DEBUG 1  // 0–2
 #endif
 
 #define MOTOR_POWER_PIN     21
@@ -32,7 +39,7 @@
 #if SELECTOR_TYPE == OAKGRIGSBY_6WAY
 #   define SELECTOR_PIN4    5
 #endif
-#if USE_DISPLAY
+#if DISPLAY_BPM
 #   define DISPLAY_CLK_PIN  15
 #   define DISPLAY_DIO_PIN  14
 #endif
@@ -53,8 +60,13 @@ Button selector[] = {
 
 mode_t modeMap[1<<ARRLEN(selector)];  // Selector state → mode
 
-#if USE_DISPLAY
+#if DISPLAY_BPM
 TM1637Display display{DISPLAY_CLK_PIN, DISPLAY_DIO_PIN};
+#endif
+
+#if SEND_MIDI
+USBMIDI_CREATE_DEFAULT_INSTANCE();
+using namespace MIDI_NAMESPACE;
 #endif
 
 void setup() {
@@ -90,13 +102,17 @@ void setup() {
 #endif
 
     stop();  // Prevent movement at startup
-#if USE_DISPLAY
+#if DISPLAY_BPM
     display.clear();
 #endif
 
     Serial.begin(SERIAL_BAUD_RATE);   // USB serial for logging
     Serial1.begin(SERIAL_BAUD_RATE);  // HW serial to color_to_sound
     delay(SERIAL_BEGIN_DELAY);
+
+#if SEND_MIDI
+    MIDI.begin();
+#endif
 }
 
 void loop() {
@@ -130,8 +146,8 @@ void checkSync() {
             0, 1023,
             SYNC_PERIOD_LOW, SYNC_PERIOD_HIGH
         );
-#if USE_DISPLAY
-        uint8_t bpm = constrain(BPM(syncPeriod), 0, 255);
+#if DISPLAY_BPM
+        uint8_t bpm = min(BPM(syncPeriod), 999);
         display.showNumberDec(bpm, false, 3, 1);
 #endif
     }
@@ -139,7 +155,7 @@ void checkSync() {
     if (currTime - lastSyncTime >= syncPeriod) {
         sync();
         lastSyncTime = currTime;
-#if USE_DISPLAY
+#if DISPLAY_BPM
         static bool drawTop;  // Segments:  gfedcba
         static uint8_t const boxTop[] = {0b01100011};
         static uint8_t const boxBtm[] = {0b01011100};
@@ -147,6 +163,16 @@ void checkSync() {
         drawTop = !drawTop;
 #endif
     }
+
+#if SEND_MIDI
+    static time_ms lastMidiTime;
+
+    MIDI.read();
+    if (currTime - lastMidiTime >= syncPeriod / 24) {  // 24 PPQN
+        MIDI.sendRealTime(MidiType::Clock);
+        lastMidiTime = currTime;
+    }
+#endif
 }
 
 void checkSelector() {
