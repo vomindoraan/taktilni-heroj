@@ -14,6 +14,10 @@
 #   define SENSOR_NO 1  // 1–4
 #endif
 
+#ifndef LED_COLOR
+#   define LED_COLOR false
+#endif
+
 #define TCS_INTEGRATION_TIME   TCS34725_INTEGRATIONTIME_101MS
 #define TCS_INTEGRATION_GAIN   TCS34725_GAIN_4X
 #define TCS_INTEGRATION_PERIOD TCS_TIME_TO_PERIOD(TCS_INTEGRATION_TIME)
@@ -28,6 +32,12 @@
 #define MP3_SERIAL_TX_PIN  8
 #define MP3_DEFAULT_VOLUME 30  // 0–30
 #define MP3_DEFAULT_FOLDER Folder::TONES
+
+#if LED_COLOR
+#   define LED_COLOR_R_PIN 5
+#   define LED_COLOR_G_PIN 6
+#   define LED_COLOR_B_PIN 10
+#endif
 
 enum Folder : uint8_t {
     TONES = 1,
@@ -70,6 +80,29 @@ enum Color : uint8_t {
     WHITE,
     _TOTAL_COLORS
 };
+
+#if LED_COLOR
+uint8_t const COLOR_RGB[Color::_TOTAL_COLORS][3] = {
+    [Color::BLACK]  = {0,   0,   0},
+    [Color::RED]    = {255, 0,   0},
+    [Color::GREEN]  = {0,   255, 0},
+    [Color::BLUE]   = {0,   0,   255},
+    [Color::YELLOW] = {255, 255, 0},
+    [Color::PURPLE] = {255, 0,   255},
+    [Color::CYAN]   = {0,   255, 255},
+    [Color::ORANGE] = {255, 128, 0},
+    [Color::PINK]   = {255, 0,   128},
+    [Color::AZURE]  = {0,   128, 255},
+    [Color::WHITE]  = {255, 255, 255},
+};
+
+void ledColor(Color color) {
+    auto [r, g, b] = COLOR_RGB[color];
+    analogWrite(LED_COLOR_R_PIN, r);
+    analogWrite(LED_COLOR_G_PIN, g);
+    analogWrite(LED_COLOR_B_PIN, b);
+}
+#endif
 
 uint16_t const COLOR_SAMPLES[COLOR_COUNT][5] = {  // 101ms integration, 4x gain
 #if SENSOR_NO == 1
@@ -170,6 +203,13 @@ void setup() {
     Serial.print("[MP3] Playing ");
     Serial.print((playTiming == PlayTiming::ON_SYNC) ? "on Sync" : "self-timed");
     Serial.print(" @ "); Serial.print(millis()); Serial.println("ms");
+#endif
+
+#if LED_COLOR
+    pinMode(LED_COLOR_R_PIN, OUTPUT);
+    pinMode(LED_COLOR_G_PIN, OUTPUT);
+    pinMode(LED_COLOR_B_PIN, OUTPUT);
+    ledColor(Color::BLACK);
 #endif
 }
 
@@ -333,6 +373,10 @@ void readChangeMode() {
 }
 
 void playTrackFor(Color color) {
+#if LED_COLOR
+    ledColor(Color::BLACK);
+#endif
+
     Folder folder = (mp3Folder == MIXED) ? Folder(SENSOR_NO) : mp3Folder;
     Track track = mp3TrackMap[color];
 #if DEBUG
@@ -340,6 +384,10 @@ void playTrackFor(Color color) {
     Serial.print("\\"); Serial.println(track);
 #endif
     mp3.playFolderTrack(folder, track);
+
+#if LED_COLOR
+    ledColor(color);
+#endif
 }
 
 class Mp3Callbacks {
@@ -350,6 +398,9 @@ public:
     }
 
     static void OnPlayFinished(DfMp3& mp3, DfMp3_PlaySources source, uint16_t track) {
+#if LED_COLOR
+        ledColor(Color::BLACK);
+#endif
 #if DEBUG
         Serial.print("[MP3] Finished playing "); Serial.println(track);
 #endif
