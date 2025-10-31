@@ -106,31 +106,24 @@ void setup() {
     display.clear();
 #endif
 
-    Serial.begin(SERIAL_BAUD_RATE);   // USB serial for logging
+    Serial.begin(SERIAL_BAUD_RATE);   // USB serial for logging and MIDI
     Serial1.begin(SERIAL_BAUD_RATE);  // HW serial to color_to_sound
     delay(SERIAL_BEGIN_DELAY);
 
 #if SEND_MIDI
-    MIDI.begin();
+    if (Serial) {
+        MIDI.begin(MIDI_CHANNEL_OMNI);
+        MIDI.turnThruOff();
+        MIDI.sendRealTime(MidiType::Start);  // Reset position, start playback
+        MIDI.sendRealTime(MidiType::Stop);   // Stop playback (controls resume)
+    }
 #endif
 }
 
 void loop() {
-    checkSelector();
-
-    checkSync();
-
-    if (switchForward.active()) {
-        forward();
-    } else if (switchReverse.active()) {
-        reverse();
-    } else if (buttonForward.pressed()) {
-        forward();
-    } else if (buttonReverse.pressed()) {
-        reverse();
-    } else {
-        stop();
-    }
+    checkSelector();  // Writes to color_to_sound via Serial1
+    checkSync();      // Writes to color_to_sound via Serial1, MIDI via Serial
+    checkControls();  // Writes to MIDI via Serial
 }
 
 void checkSync() {
@@ -167,10 +160,12 @@ void checkSync() {
 #if SEND_MIDI
     static time_ms lastMidiTime;
 
-    MIDI.read();
-    if (currTime - lastMidiTime >= syncPeriod / 24) {  // 24 PPQN
-        MIDI.sendRealTime(MidiType::Clock);
-        lastMidiTime = currTime;
+    if (Serial) {
+        MIDI.read();  // Keep buffer empty
+        if (currTime - lastMidiTime >= syncPeriod / 24) {  // 24 PPQN
+            MIDI.sendRealTime(MidiType::Clock);
+            lastMidiTime = currTime;
+        }
     }
 #endif
 }
@@ -185,6 +180,31 @@ void checkSelector() {
     if (changed && modeMap[state]) {
         changeMode(modeMap[state]);
     }
+}
+
+void checkControls() {
+    static bool wasPlaying;
+
+    bool playing = true;
+    if (switchForward.active()) {  // Order matters
+        forward();
+    } else if (switchReverse.active()) {
+        reverse();
+    } else if (buttonForward.pressed()) {
+        forward();
+    } else if (buttonReverse.pressed()) {
+        reverse();
+    } else {
+        stop();
+        playing = false;
+    }
+
+#if SEND_MIDI
+    if (Serial && playing != wasPlaying) {
+        MIDI.sendRealTime(playing ? MidiType::Continue : MidiType::Stop);
+    }
+#endif
+    wasPlaying = playing;
 }
 
 void sync() {
