@@ -13,7 +13,7 @@
 #define CMD_SYNC        'S'
 #define CMD_CHANGE_MODE 'M'
 
-#define SYNC_TIMEOUT     5000UL
+#define SYNC_TIMEOUT     1500UL
 #define SYNC_PERIOD_LOW  250UL  // 1/8 notes
 #define SYNC_PERIOD_HIGH 850UL
 #define SYNC_PERIOD_AVG  ((SYNC_PERIOD_LOW + SYNC_PERIOD_HIGH) / 2)
