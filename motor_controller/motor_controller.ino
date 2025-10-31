@@ -60,6 +60,8 @@ Button selector[] = {
 
 mode_t modeMap[1<<ARRLEN(selector)];  // Selector state → mode
 
+bool playing;  // Is the conveyor currently moving and playing?
+
 #if DISPLAY_BPM
 TM1637Display display{DISPLAY_CLK_PIN, DISPLAY_DIO_PIN};
 #endif
@@ -114,7 +116,7 @@ void setup() {
     if (Serial) {
         MIDI.begin(MIDI_CHANNEL_OMNI);
         MIDI.turnThruOff();
-        MIDI.sendRealTime(MidiType::Start);  // Reset position, start playback
+        MIDI.sendRealTime(MidiType::Start);  // Reset song pos, start playback
         MIDI.sendRealTime(MidiType::Stop);   // Stop playback (controls resume)
     }
 #endif
@@ -128,6 +130,10 @@ void loop() {
 
 void checkSync() {
     static time_ms lastReadingTime, lastSyncTime, syncPeriod;
+#if SEND_MIDI
+    static time_ms lastMidiTime;
+    static bool doMidi;
+#endif
     time_ms currTime = millis();
 
     // Update period/BPM based on pot ADC (lower value = higher speed)
@@ -145,6 +151,7 @@ void checkSync() {
 #endif
     }
 
+    // Send Sync and/or MIDI Clock based on period/BPM
     if (currTime - lastSyncTime >= syncPeriod) {
         sync();
         lastSyncTime = currTime;
@@ -155,19 +162,18 @@ void checkSync() {
         display.setSegments(drawTop ? boxTop : boxBtm, 1, 0);
         drawTop = !drawTop;
 #endif
-    }
-
 #if SEND_MIDI
-    static time_ms lastMidiTime;
+        doMidi = playing;  // Ensure Clock starts and stops on Sync
+    }
 
     if (Serial) {
         MIDI.read();  // Keep buffer empty
-        if (currTime - lastMidiTime >= syncPeriod / 24) {  // 24 PPQN
+        if (doMidi && currTime - lastMidiTime >= syncPeriod / 24) {  // 24 PPQN
             MIDI.sendRealTime(MidiType::Clock);
             lastMidiTime = currTime;
         }
-    }
 #endif
+    }
 }
 
 void checkSelector() {
@@ -183,9 +189,7 @@ void checkSelector() {
 }
 
 void checkControls() {
-    static bool wasPlaying;
-
-    bool playing = true;
+    bool p = true;
     if (switchForward.active()) {  // Order matters
         forward();
     } else if (switchReverse.active()) {
@@ -196,15 +200,15 @@ void checkControls() {
         reverse();
     } else {
         stop();
-        playing = false;
+        p = false;
     }
 
 #if SEND_MIDI
-    if (Serial && playing != wasPlaying) {
-        MIDI.sendRealTime(playing ? MidiType::Continue : MidiType::Stop);
+    if (Serial && p != playing) {
+        MIDI.sendRealTime(p ? MidiType::Continue : MidiType::Stop);
     }
 #endif
-    wasPlaying = playing;
+    playing = p;
 }
 
 void sync() {

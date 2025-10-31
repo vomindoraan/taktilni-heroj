@@ -151,7 +151,7 @@ void setup() {
     }
 #endif
 
-    // If motor_controller is sending sync commands, play is triggered on sync
+    // If motor_controller is sending Sync commands, play is triggered on Sync
     // Otherwise, wait until timeout and use a preset HW timer to trigger play
     bool syncRead, timedOut;
     time_ms syncStartTime = millis();
@@ -167,7 +167,7 @@ void setup() {
     }
 #if DEBUG
     Serial.print("[MP3] Playing ");
-    Serial.print((playTiming == PlayTiming::ON_SYNC) ? "on sync" : "self-timed");
+    Serial.print((playTiming == PlayTiming::ON_SYNC) ? "on Sync" : "self-timed");
     Serial.print(" @ "); Serial.print(millis()); Serial.println("ms");
 #endif
 }
@@ -314,8 +314,8 @@ void readSync() {
 }
 
 void readChangeMode() {
-    mode_t mode = 0;
     // Consume consecutive commands, keep latest (format: "M%d")
+    mode_t mode = 0;
     while (Serial1.available() && Serial1.read() == CMD_CHANGE_MODE) {
         mode = Serial1.parseInt(SKIP_NONE);
 #if DEBUG >= 2
