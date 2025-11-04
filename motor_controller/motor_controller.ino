@@ -3,7 +3,7 @@
 #include "Switch.h"
 
 #ifndef DEBUG
-#   define DEBUG 1  // 0–2
+#   define DEBUG 2  // 0–3
 #endif
 
 #ifndef DISPLAY_BPM
@@ -77,8 +77,8 @@ void setup() {
     pinMode(MOTOR_DIRECTION_PIN, OUTPUT);
     pinMode(SWITCH_FORWARD_PIN,  INPUT_PULLUP);
     pinMode(SWITCH_REVERSE_PIN,  INPUT_PULLUP);
-    pinMode(BUTTON_FORWARD_PIN,  INPUT);
-    pinMode(BUTTON_REVERSE_PIN,  INPUT);
+    pinMode(BUTTON_FORWARD_PIN,  INPUT_PULLUP);
+    pinMode(BUTTON_REVERSE_PIN,  INPUT_PULLUP);
     for (auto&& s : selector) {
         pinMode(s.pin, INPUT_PULLUP);
     }
@@ -106,6 +106,7 @@ void setup() {
 
     stop();  // Prevent movement at startup
 #if DISPLAY_BPM
+    display.setBrightness(7);
     display.clear();
 #endif
 
@@ -138,7 +139,7 @@ void checkSync() {
     time_ms currTime = millis();
 
     // Update period/BPM based on pot ADC (lower value = higher speed)
-    if (currTime - lastReadingTime >= SYNC_PERIOD_LOW) {
+    if (currTime - lastReadingTime >= SYNC_PERIOD_HIGH) {
         int reading = analogRead(POT_SPEED_PIN);
         lastReadingTime = currTime;
         syncPeriod = map(
@@ -230,7 +231,7 @@ void changeMode(mode_t mode) {
 void forward() {
     digitalWrite(MOTOR_POWER_PIN,     LOW);
     digitalWrite(MOTOR_DIRECTION_PIN, HIGH);
-#if DEBUG >= 2
+#if DEBUG >= 3
     Serial.println("Forward");
 #endif
 }
@@ -238,14 +239,14 @@ void forward() {
 void reverse() {
     digitalWrite(MOTOR_POWER_PIN,     LOW);
     digitalWrite(MOTOR_DIRECTION_PIN, LOW);
-#if DEBUG >= 2
+#if DEBUG >= 3
     Serial.println("Reverse");
 #endif
 }
 
 void stop() {
     digitalWrite(MOTOR_POWER_PIN, HIGH);
-#if DEBUG >= 2
+#if DEBUG >= 3
     Serial.println("Stop");
 #endif
 }
