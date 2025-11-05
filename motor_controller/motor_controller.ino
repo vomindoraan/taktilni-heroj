@@ -17,7 +17,8 @@
 #   define SEND_MIDI true
 #endif
 #if SEND_MIDI
-#   include <USB-MIDI.h>
+#   include <MIDI.h>
+#   include <MIDIUSB.h>
 #endif
 
 #define GENERIC_TL_5WAY  '5'  // Generic Telecaster 5-way lever switch (KP)
@@ -45,6 +46,12 @@
 #   define DISPLAY_DIO_PIN  14
 #endif
 
+#if SEND_MIDI
+#   define MIDI_PPQN 24
+#   define MIDI_PPEN (MIDI_PPQN / 2)
+USING_NAMESPACE_MIDI
+#endif
+
 Switch switchForward = {SWITCH_FORWARD_PIN};
 Switch switchReverse = {SWITCH_REVERSE_PIN};
 Button buttonForward = {BUTTON_FORWARD_PIN};
@@ -65,11 +72,6 @@ bool playing;  // Is the conveyor currently moving and playing?
 
 #if DISPLAY_BPM
 TM1637Display display{DISPLAY_CLK_PIN, DISPLAY_DIO_PIN};
-#endif
-
-#if SEND_MIDI
-USBMIDI_CREATE_DEFAULT_INSTANCE();
-using namespace MIDI_NAMESPACE;
 #endif
 
 void setup() {
@@ -115,12 +117,8 @@ void setup() {
     delay(SERIAL_BEGIN_DELAY);
 
 #if SEND_MIDI
-    if (Serial) {
-        MIDI.begin(MIDI_CHANNEL_OMNI);
-        MIDI.turnThruOff();
-        MIDI.sendRealTime(MidiType::Start);  // Reset song pos, start playback
-        MIDI.sendRealTime(MidiType::Stop);   // Stop playback (controls resume)
-    }
+    sendMIDI(MidiType::Start);  // Reset song pos, start playback
+    sendMIDI(MidiType::Stop);   // Stop playback (controls resume)
 #endif
 }
 
@@ -168,12 +166,9 @@ void checkSync() {
         doMidi = playing;  // Ensure Clock starts and stops on Sync
     }
 
-    if (Serial) {
-        MIDI.read();  // Keep buffer empty
-        if (doMidi && currTime - lastMidiTime >= syncPeriod / 24) {  // 24 PPQN
-            MIDI.sendRealTime(MidiType::Clock);
-            lastMidiTime = currTime;
-        }
+    if (doMidi && currTime - lastMidiTime >= syncPeriod / MIDI_PPEN) {
+        sendMIDI(MidiType::Clock);
+        lastMidiTime = currTime;
 #endif
     }
 }
@@ -206,8 +201,8 @@ void checkControls() {
     }
 
 #if SEND_MIDI
-    if (Serial && p != playing) {
-        MIDI.sendRealTime(p ? MidiType::Continue : MidiType::Stop);
+    if (p != playing) {
+        sendMIDI(p ? MidiType::Continue : MidiType::Stop);
     }
 #endif
     playing = p;
@@ -227,6 +222,16 @@ void changeMode(mode_t mode) {
     Serial.print("Mode "); Serial.println(mode);
 #endif
 }
+
+#if SEND_MIDI
+void sendMIDI(MidiType type) {
+    MidiUSB.sendMIDI({0x0F, type, 0, 0});
+    MidiUSB.flush();
+#   if DEBUG >= 2
+    Serial.print("MIDI "); Serial.println(type, HEX);
+#   endif
+}
+#endif
 
 void forward() {
     digitalWrite(MOTOR_POWER_PIN,     LOW);
