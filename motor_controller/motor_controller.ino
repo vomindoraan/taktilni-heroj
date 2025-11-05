@@ -129,7 +129,7 @@ void loop() {
 }
 
 void checkSync() {
-    static time_ms lastReadingTime, lastSyncTime, syncPeriod;
+    static time_ms lastSyncTime, syncPeriod;
 #if SEND_MIDI
     static time_ms lastMidiTime;
     static bool doMidi;
@@ -137,19 +137,12 @@ void checkSync() {
     time_ms currTime = millis();
 
     // Update period/BPM based on pot ADC (lower value = higher speed)
-    if (currTime - lastReadingTime >= SYNC_PERIOD_HIGH) {
-        int reading = analogRead(POT_SPEED_PIN);
-        lastReadingTime = currTime;
-        syncPeriod = map(
-            constrain(reading, 0, 1023),
-            0, 1023,
-            SYNC_PERIOD_LOW, SYNC_PERIOD_HIGH
-        );
-#if DISPLAY_BPM
-        uint8_t bpm = min(BPM(syncPeriod), 999);
-        display.showNumberDec(bpm, false, 3, 1);
-#endif
-    }
+    int reading = analogRead(POT_SPEED_PIN);
+    syncPeriod = map(
+        constrain(reading, 0, 1023),
+        0, 1023,
+        SYNC_PERIOD_LOW, SYNC_PERIOD_HIGH
+    );
 
     // Send Sync and/or MIDI Clock based on period/BPM
     if (currTime - lastSyncTime >= syncPeriod) {
@@ -171,6 +164,15 @@ void checkSync() {
         lastMidiTime = currTime;
 #endif
     }
+
+#if DISPLAY_BPM
+    static time_ms lastDisplayTime;
+    if (currTime - lastDisplayTime >= SYNC_PERIOD_HIGH) {
+        uint8_t bpm = min(BPM(syncPeriod), 999);
+        display.showNumberDec(bpm, false, 3, 1);
+        lastDisplayTime = currTime;
+    }
+#endif
 }
 
 void checkSelector() {
