@@ -150,8 +150,8 @@ void checkSync() {
         lastSyncTime = currTime;
 #if DISPLAY_BPM
         static bool drawTop;  // Segments:  gfedcba
-        static uint8_t const boxTop[] = {0b01100011};
-        static uint8_t const boxBtm[] = {0b01011100};
+        static byte const boxTop[] = {0b01100011};
+        static byte const boxBtm[] = {0b01011100};
         display.setSegments(drawTop ? boxTop : boxBtm, 1, 0);
         drawTop = !drawTop;
 #endif
@@ -168,7 +168,7 @@ void checkSync() {
 #if DISPLAY_BPM
     static time_ms lastDisplayTime;
     if (currTime - lastDisplayTime >= SYNC_PERIOD_HIGH) {
-        uint8_t bpm = min(BPM(syncPeriod), 999);
+        int bpm = min(BPM(syncPeriod), 999);
         display.showNumberDec(bpm, false, 3, 1);
         lastDisplayTime = currTime;
     }

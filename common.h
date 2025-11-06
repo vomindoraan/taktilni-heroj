@@ -14,8 +14,8 @@
 #define CMD_CHANGE_MODE 'M'
 
 #define SYNC_TIMEOUT     1500UL
-#define SYNC_PERIOD_LOW  250UL  // 1/8 notes
-#define SYNC_PERIOD_HIGH 850UL
+#define SYNC_PERIOD_LOW  234UL  // 1/8 notes
+#define SYNC_PERIOD_HIGH 615UL
 #define SYNC_PERIOD_AVG  ((SYNC_PERIOD_LOW + SYNC_PERIOD_HIGH) / 2)
 
 #define BPM(p) (30000UL / (p))  // 4/4 time

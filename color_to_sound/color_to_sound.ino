@@ -7,7 +7,7 @@
 #include <SoftwareSerial.h>
 
 #ifndef DEBUG
-#   define DEBUG 1  // 0–3
+#   define DEBUG 2  // 0–3
 #endif
 
 #ifndef SENSOR_NO
@@ -214,8 +214,7 @@ void setup() {
 }
 
 void loop() {
-    static Color lastColor = Color::NONE;
-    static Color enqueuedColor = Color::NONE;
+    static Color lastColor = Color::NONE, enqueuedColor = Color::NONE;
 
     uint16_t r, g, b, c;
     if (readRGBC_nb(r, g, b, c)) {  // Reads from TCS34725 via I2C
@@ -401,7 +400,7 @@ public:
 #if LED_COLOR
         ledColor(Color::BLACK);
 #endif
-#if DEBUG
+#if DEBUG >= 3
         Serial.print("[MP3] Finished playing "); Serial.println(track);
 #endif
     }
