@@ -1,15 +1,27 @@
+// Pro Micro
+#include "common.h"
+#include "Timer.h"
+
 #include <Adafruit_TCS34725.h>
 #include <DFMiniMp3.h>
 #include <SoftwareSerial.h>
 
-#include "common.h"
+#ifndef DEBUG
+#   define DEBUG 1  // 0–3
+#endif
 
 #ifndef SENSOR_NO
 #   define SENSOR_NO 1  // 1–4
 #endif
-#ifndef DEBUG
-#   define DEBUG     1  // 0–2
+
+#ifndef LED_COLOR
+#   define LED_COLOR false
 #endif
+
+#define TCS_INTEGRATION_TIME   TCS34725_INTEGRATIONTIME_101MS
+#define TCS_INTEGRATION_GAIN   TCS34725_GAIN_4X
+#define TCS_INTEGRATION_PERIOD TCS_TIME_TO_PERIOD(TCS_INTEGRATION_TIME)
+#define TCS_TIME_TO_PERIOD(it) time_ms((256 - (it)) * 12 / 5 + 1)
 
 #define COLOR_COUNT           7
 #define COLOR_C_THRESHOLD     160
@@ -20,6 +32,12 @@
 #define MP3_SERIAL_TX_PIN  8
 #define MP3_DEFAULT_VOLUME 30  // 0–30
 #define MP3_DEFAULT_FOLDER Folder::TONES
+
+#if LED_COLOR
+#   define LED_COLOR_R_PIN 5
+#   define LED_COLOR_G_PIN 6
+#   define LED_COLOR_B_PIN 10
+#endif
 
 enum Folder : uint8_t {
     TONES = 1,
@@ -42,8 +60,13 @@ enum Track : uint8_t {
     _TOTAL_TRACKS = A
 };
 
-enum Color : uint16_t {
-    NONE  = UINT16_MAX,
+enum PlayTiming : uint8_t {
+    ON_SYNC = 1,
+    SELF_TIMED,
+};
+
+enum Color : uint8_t {
+    NONE  = UINT8_MAX,
     BLACK = 0,
     RED,
     GREEN,
@@ -58,7 +81,30 @@ enum Color : uint16_t {
     _TOTAL_COLORS
 };
 
-uint16_t const COLOR_SAMPLES[COLOR_COUNT][5] = {
+#if LED_COLOR
+uint8_t const COLOR_RGB[Color::_TOTAL_COLORS][3] = {
+    [Color::BLACK]  = {0,   0,   0},
+    [Color::RED]    = {255, 0,   0},
+    [Color::GREEN]  = {0,   255, 0},
+    [Color::BLUE]   = {0,   0,   255},
+    [Color::YELLOW] = {255, 255, 0},
+    [Color::PURPLE] = {255, 0,   255},
+    [Color::CYAN]   = {0,   255, 255},
+    [Color::ORANGE] = {255, 128, 0},
+    [Color::PINK]   = {255, 0,   128},
+    [Color::AZURE]  = {0,   128, 255},
+    [Color::WHITE]  = {255, 255, 255},
+};
+
+void ledColor(Color color) {
+    auto [r, g, b] = COLOR_RGB[color];
+    analogWrite(LED_COLOR_R_PIN, r);
+    analogWrite(LED_COLOR_G_PIN, g);
+    analogWrite(LED_COLOR_B_PIN, b);
+}
+#endif
+
+uint16_t const COLOR_SAMPLES[COLOR_COUNT][5] = {  // 101ms integration, 4x gain
 #if SENSOR_NO == 1
     {Color::RED,    153, 52,  39,  242},
     {Color::GREEN,  77,  118, 67,  264},
@@ -96,7 +142,7 @@ uint16_t const COLOR_SAMPLES[COLOR_COUNT][5] = {
 #endif
 };
 
-Adafruit_TCS34725 tcs{TCS34725_INTEGRATIONTIME_101MS, TCS34725_GAIN_4X};
+Adafruit_TCS34725 tcs{TCS_INTEGRATION_TIME, TCS_INTEGRATION_GAIN};
 
 SoftwareSerial mp3Serial{MP3_SERIAL_RX_PIN, MP3_SERIAL_TX_PIN};
 
@@ -107,6 +153,9 @@ DfMp3 mp3{mp3Serial};
 Folder mp3Folder = MP3_DEFAULT_FOLDER;
 Track  mp3TrackMap[Color::_TOTAL_COLORS];  // Color → track no.
 
+PlayTiming playTiming;
+Timer1&    playTimer = Timer1::instance();
+
 void setup() {
     mp3TrackMap[Color::RED]    = Track::C_MAJOR;
     mp3TrackMap[Color::GREEN]  = Track::G_MAJOR;
@@ -116,12 +165,11 @@ void setup() {
     mp3TrackMap[Color::ORANGE] = Track::D;
     mp3TrackMap[Color::PINK]   = Track::A;
 
-    Serial.begin(SERIAL_BAUD_RATE);        // USB serial for logging
-    Serial1.begin(SERIAL_BAUD_RATE);       // HW serial from motor_controller
-    mp3Serial.begin(SW_SERIAL_BAUD_RATE);  // SW serial to/from DFMiniMp3
+    Serial.begin(SERIAL_BAUD_RATE);   // USB serial for logging
+    Serial1.begin(SERIAL_BAUD_RATE);  // HW serial from motor_controller
+    mp3.begin(SW_SERIAL_BAUD_RATE);   // SW serial to/from DFMiniMp3
     delay(SERIAL_BEGIN_DELAY);
 
-    mp3.begin(SW_SERIAL_BAUD_RATE);
 #if DEBUG
     mp3.reset();
 #endif
@@ -136,37 +184,95 @@ void setup() {
         Serial.println("[TCS] Sensor " STR(SENSOR_NO) " online");
     }
 #endif
+
+    // If motor_controller is sending Sync commands, play is triggered on Sync
+    // Otherwise, wait until timeout and use a preset HW timer to trigger play
+    bool syncRead, timedOut;
+    time_ms syncStartTime = millis();
+    while (
+        !(syncRead = Serial1.available() && Serial1.read() == CMD_SYNC) &&
+        !(timedOut = millis() - syncStartTime >= SYNC_TIMEOUT)
+    );
+    if (syncRead) {
+        playTiming = PlayTiming::ON_SYNC;
+    } else {
+        playTiming = PlayTiming::SELF_TIMED;
+        playTimer.begin(SYNC_PERIOD_AVG);
+    }
+#if DEBUG
+    Serial.print("[MP3] Playing ");
+    Serial.print((playTiming == PlayTiming::ON_SYNC) ? "on Sync" : "self-timed");
+    Serial.print(" @ "); Serial.print(millis()); Serial.println("ms");
+#endif
+
+#if LED_COLOR
+    pinMode(LED_COLOR_R_PIN, OUTPUT);
+    pinMode(LED_COLOR_G_PIN, OUTPUT);
+    pinMode(LED_COLOR_B_PIN, OUTPUT);
+    ledColor(Color::BLACK);
+#endif
 }
 
 void loop() {
     static Color lastColor = Color::NONE;
-
-    readChangeMode();  // Reads from motor_controller via Serial1
+    static Color enqueuedColor = Color::NONE;
 
     uint16_t r, g, b, c;
-    readRGBC(r, g, b, c);  // Reads from TCS34725 via I2C
-
-    Color color = identifyColor(r, g, b, c);
-    if (color != Color::NONE) {
+    if (readRGBC_nb(r, g, b, c)) {  // Reads from TCS34725 via I2C
+        Color color = identifyColor(r, g, b, c);
+        if (color != Color::NONE) {
 #if DEBUG
-        Serial.print("[TCS] Identified color "); Serial.println(color);
+            Serial.print("[TCS] Identified color "); Serial.println(color);
 #endif
-        if (color != lastColor) {
-            playTrackFor(color);  // Writes to DFMiniMp3 via mp3Serial
+            if (color != lastColor) {
+                enqueuedColor = color;
+            }
         }
+        lastColor = color;
     }
-    lastColor = color;
+
+    bool play = readCommands();  // Reads from motor_controller via Serial1
+    if (playTiming == PlayTiming::SELF_TIMED) {
+        play = playTimer.elapsed();
+    }
+    if (play && enqueuedColor != Color::NONE) {
+        playTrackFor(enqueuedColor);  // Writes to DFMiniMp3 via mp3Serial
+        enqueuedColor = Color::NONE;
+    }
 }
 
+// Blocking read, delays loop by TCS_INTEGRATION_PERIOD
 void readRGBC(uint16_t& r, uint16_t& g, uint16_t& b, uint16_t& c) {
     tcs.getRawData(&r, &g, &b, &c);
-#if DEBUG >= 2
+#if DEBUG >= 3
     Serial.print("[TCS] ");
     Serial.print("R: "); Serial.print(r); Serial.print(", ");
     Serial.print("G: "); Serial.print(g); Serial.print(", ");
     Serial.print("B: "); Serial.print(b); Serial.print(", ");
     Serial.print("C: "); Serial.print(c); Serial.println();
 #endif
+}
+
+// Non-blocking read, returns whether data is ready for use
+bool readRGBC_nb(uint16_t& r, uint16_t& g, uint16_t& b, uint16_t& c) {
+    static time_ms lastReadingTime;
+    if (millis() - lastReadingTime < TCS_INTEGRATION_PERIOD) {
+        return false;
+    }
+
+    c = tcs.read16(TCS34725_CDATAL);
+    r = tcs.read16(TCS34725_RDATAL);
+    g = tcs.read16(TCS34725_GDATAL);
+    b = tcs.read16(TCS34725_BDATAL);
+    lastReadingTime = millis();
+#if DEBUG >= 3
+    Serial.print("[TCS] ");
+    Serial.print("R: "); Serial.print(r); Serial.print(", ");
+    Serial.print("G: "); Serial.print(g); Serial.print(", ");
+    Serial.print("B: "); Serial.print(b); Serial.print(", ");
+    Serial.print("C: "); Serial.print(c); Serial.println();
+#endif
+    return true;
 }
 
 Color identifyColor(uint16_t r, uint16_t g, uint16_t b, uint16_t c) {
@@ -178,15 +284,14 @@ Color identifyColor(uint16_t r, uint16_t g, uint16_t b, uint16_t c) {
     Color bestMatch = Color::NONE;
     uint16_t bestMatchDist = UINT16_MAX;
     uint16_t bestMatchCDist = UINT16_MAX;
-
-#if DEBUG >= 2
+#if DEBUG >= 3
     Serial.print("[TCS] Distances: ");
 #endif
-    for (int i = 0; i < COLOR_COUNT; i++) {
+    for (size_t i = 0; i < COLOR_COUNT; i++) {
         auto [color, rSample, gSample, bSample, cSample] = COLOR_SAMPLES[i];
         uint16_t dist = colorDistance(r, g, b, c, rSample, gSample, bSample, cSample);
         uint16_t cDist = abs(int16_t(c) - int16_t(cSample));
-#if DEBUG >= 2
+#if DEBUG >= 3
         Serial.print(dist); Serial.print("/"); Serial.print(cDist);
         Serial.print((i < COLOR_COUNT-1) ? ", " : "\n");
 #endif
@@ -199,7 +304,6 @@ Color identifyColor(uint16_t r, uint16_t g, uint16_t b, uint16_t c) {
             bestMatchCDist = cDist;
         }
     }
-
     return bestMatch;
 }
 
@@ -221,11 +325,43 @@ uint16_t colorDistance(
     return sqrt(sq(rDiff) + sq(gDiff) + sq(bDiff));
 }
 
+bool readCommands() {
+    bool play = false;
+    while (Serial1.available()) {
+        switch (Serial1.peek()) {
+        case CMD_SYNC:
+            readSync();
+            play |= playTiming == PlayTiming::ON_SYNC;
+            break;
+
+        case CMD_CHANGE_MODE:
+            readChangeMode();
+            break;
+
+        default:
+            Serial1.read();  // Ignore non-command chars
+        }
+    }
+    return play;
+}
+
+void readSync() {
+    // Consume consecutive commands
+    while (Serial1.available() && Serial1.read() == CMD_SYNC) {
+#if DEBUG >= 2
+        Serial.print("[CMD] Sync @ "); Serial.print(millis()); Serial.println("ms");
+#endif
+    }
+}
+
 void readChangeMode() {
-    int mode = 0;
     // Consume consecutive commands, keep latest (format: "M%d")
-    while (Serial1.available() && Serial1.read() == CHANGE_MODE_CMD) {
+    mode_t mode = 0;
+    while (Serial1.available() && Serial1.read() == CMD_CHANGE_MODE) {
         mode = Serial1.parseInt(SKIP_NONE);
+#if DEBUG >= 2
+        Serial.print("[CMD] Mode "); Serial.println(mode);
+#endif
     }
 
     if (mode > 0 && mode <= Folder::_TOTAL_FOLDERS) {
@@ -237,6 +373,10 @@ void readChangeMode() {
 }
 
 void playTrackFor(Color color) {
+#if LED_COLOR
+    ledColor(Color::BLACK);
+#endif
+
     Folder folder = (mp3Folder == MIXED) ? Folder(SENSOR_NO) : mp3Folder;
     Track track = mp3TrackMap[color];
 #if DEBUG
@@ -244,6 +384,10 @@ void playTrackFor(Color color) {
     Serial.print("\\"); Serial.println(track);
 #endif
     mp3.playFolderTrack(folder, track);
+
+#if LED_COLOR
+    ledColor(color);
+#endif
 }
 
 class Mp3Callbacks {
@@ -254,6 +398,9 @@ public:
     }
 
     static void OnPlayFinished(DfMp3& mp3, DfMp3_PlaySources source, uint16_t track) {
+#if LED_COLOR
+        ledColor(Color::BLACK);
+#endif
 #if DEBUG
         Serial.print("[MP3] Finished playing "); Serial.println(track);
 #endif
