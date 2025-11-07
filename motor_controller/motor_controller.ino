@@ -128,6 +128,42 @@ void loop() {
     checkControls();  // Writes to MIDI via Serial
 }
 
+time_ms syncMap(int input) {
+    // Known data points (input, output)
+    const double data[][2] = {
+        {0, 234.375},
+        {155, 254.237288},
+        {290, 281.690141},
+        {407, 303.030303},
+        {556, 338.600451},
+        {656, 375.0},
+        {825, 465.116279},
+        {958, 550.458716},
+        {1023, 612.244898}
+    };
+    const int numPoints = 9;
+
+    // Clamp input to valid range
+    if (input <= 0) return 234.375;
+    if (input >= 1023) return 612.244898;
+
+    // Find the two points to interpolate between
+    for (int i = 0; i < numPoints - 1; i++) {
+        if (input >= data[i][0] && input <= data[i+1][0]) {
+            double x0 = data[i][0];
+            double y0 = data[i][1];
+            double x1 = data[i+1][0];
+            double y1 = data[i+1][1];
+
+            // Linear interpolation
+            double t = (input - x0) / (x1 - x0);
+            return y0 + t * (y1 - y0);
+        }
+    }
+
+    return 234.375; // Fallback
+}
+
 void checkSync() {
     static time_ms lastSyncTime, syncPeriod;
 #if SEND_MIDI
@@ -138,11 +174,7 @@ void checkSync() {
 
     // Update period/BPM based on pot ADC (lower value = higher speed)
     int reading = analogRead(POT_SPEED_PIN);
-    syncPeriod = map(
-        constrain(reading, 0, 1023),
-        0, 1023,
-        SYNC_PERIOD_LOW, SYNC_PERIOD_HIGH
-    );
+    syncPeriod = syncMap(reading);
 
     // Send Sync and/or MIDI Clock based on period/BPM
     if (currTime - lastSyncTime >= syncPeriod) {
