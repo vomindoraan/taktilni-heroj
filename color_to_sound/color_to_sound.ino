@@ -197,7 +197,7 @@ void setup() {
         playTiming = PlayTiming::ON_SYNC;
     } else {
         playTiming = PlayTiming::SELF_TIMED;
-        playTimer.begin(SYNC_PERIOD_AVG);
+        playTimer.begin(SYNC_PERIOD_LOW);
     }
 #if DEBUG
     Serial.print("[MP3] Playing ");
@@ -214,7 +214,8 @@ void setup() {
 }
 
 void loop() {
-    static Color lastColor = Color::NONE, enqueuedColor = Color::NONE;
+    static Color lastColor     = Color::NONE;
+    static Color enqueuedColor = Color::NONE;
 
     uint16_t r, g, b, c;
     if (readRGBC_nb(r, g, b, c)) {  // Reads from TCS34725 via I2C
