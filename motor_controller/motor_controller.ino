@@ -128,40 +128,20 @@ void loop() {
     checkControls();  // Writes to MIDI via Serial
 }
 
-time_ms syncMap(int input) {
-    // Known data points (input, output)
-    const double data[][2] = {
-        {0, 234.375},
-        {155, 254.237288},
-        {290, 281.690141},
-        {407, 303.030303},
-        {556, 338.600451},
-        {656, 375.0},
-        {825, 465.116279},
-        {958, 550.458716},
-        {1023, 612.244898}
-    };
-    const int numPoints = 9;
+time_ms syncMap(int x) {
+    // Coefficients from polynomial regression (degree 3)
+    float const a3 =  3.87100032e-07f;
+    float const a2 = -2.36402268e-04f;
+    float const a1 =  2.03362630e-01f;
+    float const a0 =  2.33845431e+02f;
 
-    // Clamp input to valid range
-    if (input <= 0) return 234.375;
-    if (input >= 1023) return 612.244898;
+    // Original regression output range
+    float const baseLow  = 236.220472440945f;
+    float const baseHigh = 625.0f;
 
-    // Find the two points to interpolate between
-    for (int i = 0; i < numPoints - 1; i++) {
-        if (input >= data[i][0] && input <= data[i+1][0]) {
-            double x0 = data[i][0];
-            double y0 = data[i][1];
-            double x1 = data[i+1][0];
-            double y1 = data[i+1][1];
-
-            // Linear interpolation
-            double t = (input - x0) / (x1 - x0);
-            return y0 + t * (y1 - y0);
-        }
-    }
-
-    return 234.375; // Fallback
+    // Evaluate polynomial using Horner's method and map to actual sync range
+    float baseVal = ((a3 * x + a2) * x + a1) * x + a0;
+    return map(baseVal, baseLow, baseHigh, SYNC_PERIOD_LOW, SYNC_PERIOD_HIGH);
 }
 
 void checkSync() {
