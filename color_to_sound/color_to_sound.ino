@@ -214,7 +214,7 @@ void setup() {
 }
 
 void loop() {
-    static Color lastColor     = Color::NONE;
+    static Color lastColor = Color::NONE;
     static Color enqueuedColor = Color::NONE;
 
     uint16_t r, g, b, c;
