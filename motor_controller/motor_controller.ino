@@ -28,22 +28,24 @@
 #   define SELECTOR_TYPE OAKGRIGSBY_6WAY
 #endif
 
-#define MOTOR_POWER_PIN     21
-#define MOTOR_DIRECTION_PIN 20
-#define POT_SPEED_PIN       19
-#define SWITCH_FORWARD_PIN  9
-#define SWITCH_REVERSE_PIN  8
-#define BUTTON_FORWARD_PIN  7
-#define BUTTON_REVERSE_PIN  6
-#define SELECTOR_PIN1       2
-#define SELECTOR_PIN2       3
-#define SELECTOR_PIN3       4
+#define MOTOR_POWER_PIN       21
+#define MOTOR_DIRECTION_PIN   20
+#define POT_SPEED_PIN         19
+#define SWITCH_FORWARD_PIN    9
+#define SWITCH_REVERSE_PIN    8
+#define BUTTON_FORWARD_PIN    7
+#define BUTTON_REVERSE_PIN    6
+#define SELECTOR_PIN1         2
+#define SELECTOR_PIN2         3
+#define SELECTOR_PIN3         4
 #if SELECTOR_TYPE == OAKGRIGSBY_6WAY
-#   define SELECTOR_PIN4    5
+#   define SELECTOR_PIN4      5
 #endif
 #if DISPLAY_BPM
-#   define DISPLAY_CLK_PIN  15
-#   define DISPLAY_DIO_PIN  14
+#   define DISPLAY_CLK_PIN    15
+#   define DISPLAY_DIO_PIN    14
+#   define DISPLAY_BRIGHTNESS 7  // 0–7
+#   define DISPLAY_PERIOD     SYNC_PERIOD_HIGH
 #endif
 
 #if SEND_MIDI
@@ -108,7 +110,7 @@ void setup() {
 
     stop();  // Prevent movement at startup
 #if DISPLAY_BPM
-    display.setBrightness(7);
+    display.setBrightness(DISPLAY_BRIGHTNESS);
     display.clear();
 #endif
 
@@ -136,7 +138,7 @@ time_ms syncMap(int x) {
     float const a0 =  2.33845431e+02f;
 
     // Original regression output range
-    float const baseLow  = 236.220472440945f;
+    float const baseLow  = 236.22047244f;
     float const baseHigh = 625.0f;
 
     // Evaluate polynomial using Horner's method and map to actual sync range
@@ -179,7 +181,7 @@ void checkSync() {
 
 #if DISPLAY_BPM
     static time_ms lastDisplayTime;
-    if (currTime - lastDisplayTime >= SYNC_PERIOD_HIGH) {
+    if (currTime - lastDisplayTime >= DISPLAY_PERIOD) {
         int bpm = min(BPM(syncPeriod), 999);
         display.showNumberDec(bpm, false, 3, 1);
         lastDisplayTime = currTime;
@@ -200,7 +202,7 @@ void checkSelector() {
 }
 
 void checkControls() {
-    bool p = true;
+    bool moving = true;
     if (switchForward.active()) {  // Order matters
         forward();
     } else if (switchReverse.active()) {
@@ -211,15 +213,15 @@ void checkControls() {
         reverse();
     } else {
         stop();
-        p = false;
+        moving = false;
     }
 
 #if SEND_MIDI
-    if (p != playing) {
-        sendMIDI(p ? MidiType::Continue : MidiType::Stop);
+    if (moving != playing) {
+        sendMIDI(moving ? MidiType::Continue : MidiType::Stop);
     }
 #endif
-    playing = p;
+    playing = moving;
 }
 
 void sync() {
