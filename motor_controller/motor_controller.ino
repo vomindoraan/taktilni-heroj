@@ -1,8 +1,24 @@
+// Pro Micro
 #include "common.h"
 #include "Switch.h"
 
 #ifndef DEBUG
-#   define DEBUG 1  // 0–2
+#   define DEBUG 2  // 0–3
+#endif
+
+#ifndef DISPLAY_BPM
+#   define DISPLAY_BPM true
+#endif
+#if DISPLAY_BPM
+#   include <TM1637Display.h>
+#endif
+
+#ifndef SEND_MIDI
+#   define SEND_MIDI true
+#endif
+#if SEND_MIDI
+#   include <MIDI.h>
+#   include <MIDIUSB.h>
 #endif
 
 #define GENERIC_TL_5WAY  '5'  // Generic Telecaster 5-way lever switch (KP)
@@ -14,15 +30,26 @@
 
 #define MOTOR_POWER_PIN     21
 #define MOTOR_DIRECTION_PIN 20
+#define POT_SPEED_PIN       19
 #define SWITCH_FORWARD_PIN  9
 #define SWITCH_REVERSE_PIN  8
-#define BUTTON_FORWARD_PIN  16
-#define BUTTON_REVERSE_PIN  15
+#define BUTTON_FORWARD_PIN  7
+#define BUTTON_REVERSE_PIN  6
 #define SELECTOR_PIN1       2
 #define SELECTOR_PIN2       3
 #define SELECTOR_PIN3       4
 #if SELECTOR_TYPE == OAKGRIGSBY_6WAY
 #   define SELECTOR_PIN4    5
+#endif
+#if DISPLAY_BPM
+#   define DISPLAY_CLK_PIN  15
+#   define DISPLAY_DIO_PIN  14
+#endif
+
+#if SEND_MIDI
+#   define MIDI_PPQN 24
+#   define MIDI_PPEN (MIDI_PPQN / 2)
+USING_NAMESPACE_MIDI
 #endif
 
 Switch switchForward = {SWITCH_FORWARD_PIN};
@@ -39,15 +66,21 @@ Button selector[] = {
 #endif
 };
 
-int modeMap[1<<ARRAY_LEN(selector)] = {0};  // selector state → mode
+mode_t modeMap[1<<ARRLEN(selector)];  // Selector state → mode
+
+bool playing;  // Is the conveyor currently moving and playing?
+
+#if DISPLAY_BPM
+TM1637Display display{DISPLAY_CLK_PIN, DISPLAY_DIO_PIN};
+#endif
 
 void setup() {
     pinMode(MOTOR_POWER_PIN,     OUTPUT);
     pinMode(MOTOR_DIRECTION_PIN, OUTPUT);
     pinMode(SWITCH_FORWARD_PIN,  INPUT_PULLUP);
     pinMode(SWITCH_REVERSE_PIN,  INPUT_PULLUP);
-    pinMode(BUTTON_FORWARD_PIN,  INPUT);
-    pinMode(BUTTON_REVERSE_PIN,  INPUT);
+    pinMode(BUTTON_FORWARD_PIN,  INPUT_PULLUP);
+    pinMode(BUTTON_REVERSE_PIN,  INPUT_PULLUP);
     for (auto&& s : selector) {
         pinMode(s.pin, INPUT_PULLUP);
     }
@@ -74,16 +107,101 @@ void setup() {
 #endif
 
     stop();  // Prevent movement at startup
+#if DISPLAY_BPM
+    display.setBrightness(7);
+    display.clear();
+#endif
 
-    Serial.begin(SERIAL_BAUD_RATE);   // USB serial for logging
+    Serial.begin(SERIAL_BAUD_RATE);   // USB serial for logging and MIDI
     Serial1.begin(SERIAL_BAUD_RATE);  // HW serial to color_to_sound
     delay(SERIAL_BEGIN_DELAY);
+
+#if SEND_MIDI
+    sendMIDI(MidiType::Start);  // Reset song pos, start playback
+    sendMIDI(MidiType::Stop);   // Stop playback (controls resume)
+#endif
 }
 
 void loop() {
-    checkSelector();
+    checkSelector();  // Writes to color_to_sound via Serial1
+    checkSync();      // Writes to color_to_sound via Serial1, MIDI via Serial
+    checkControls();  // Writes to MIDI via Serial
+}
 
-    if (switchForward.active()) {
+time_ms syncMap(int x) {
+    // Coefficients from polynomial regression (degree 3)
+    float const a3 =  3.87100032e-07f;
+    float const a2 = -2.36402268e-04f;
+    float const a1 =  2.03362630e-01f;
+    float const a0 =  2.33845431e+02f;
+
+    // Original regression output range
+    float const baseLow  = 236.220472440945f;
+    float const baseHigh = 625.0f;
+
+    // Evaluate polynomial using Horner's method and map to actual sync range
+    float baseVal = ((a3 * x + a2) * x + a1) * x + a0;
+    return map(baseVal, baseLow, baseHigh, SYNC_PERIOD_LOW, SYNC_PERIOD_HIGH);
+}
+
+void checkSync() {
+    static time_ms lastSyncTime, syncPeriod;
+#if SEND_MIDI
+    static time_ms lastMidiTime;
+    static bool doMidi;
+#endif
+    time_ms currTime = millis();
+
+    // Update period/BPM based on pot ADC (lower value = higher speed)
+    int reading = analogRead(POT_SPEED_PIN);
+    syncPeriod = syncMap(reading);
+
+    // Send Sync and/or MIDI Clock based on period/BPM
+    if (currTime - lastSyncTime >= syncPeriod) {
+        sync();
+        lastSyncTime = currTime;
+#if DISPLAY_BPM
+        static bool drawTop;  // Segments:  gfedcba
+        static byte const boxTop[] = {0b01100011};
+        static byte const boxBtm[] = {0b01011100};
+        display.setSegments(drawTop ? boxTop : boxBtm, 1, 0);
+        drawTop = !drawTop;
+#endif
+#if SEND_MIDI
+        doMidi = playing;  // Ensure Clock starts and stops on Sync
+    }
+
+    if (doMidi && currTime - lastMidiTime >= syncPeriod / MIDI_PPEN) {
+        sendMIDI(MidiType::Clock);
+        lastMidiTime = currTime;
+#endif
+    }
+
+#if DISPLAY_BPM
+    static time_ms lastDisplayTime;
+    if (currTime - lastDisplayTime >= SYNC_PERIOD_HIGH) {
+        int bpm = min(BPM(syncPeriod), 999);
+        display.showNumberDec(bpm, false, 3, 1);
+        lastDisplayTime = currTime;
+    }
+#endif
+}
+
+void checkSelector() {
+    bool changed = false;
+    byte state = 0;
+    for (size_t i = 0; i < ARRLEN(selector); i++) {
+        changed |= selector[i].toggled();
+        state |= selector[i].active() << i;
+    }
+    if (changed && modeMap[state]) {
+        changeMode(modeMap[state]);
+    }
+}
+
+void checkControls() {
+    bool p = true;
+    if (switchForward.active()) {  // Order matters
         forward();
     } else if (switchReverse.active()) {
         reverse();
@@ -93,25 +211,46 @@ void loop() {
         reverse();
     } else {
         stop();
+        p = false;
     }
+
+#if SEND_MIDI
+    if (p != playing) {
+        sendMIDI(p ? MidiType::Continue : MidiType::Stop);
+    }
+#endif
+    playing = p;
 }
 
-void checkSelector() {
-    bool changed = false;
-    byte state = 0;
-    for (int i = 0; i < ARRAY_LEN(selector); i++) {
-        changed |= selector[i].toggled();
-        state |= selector[i].active() << i;
-    }
-    if (changed && modeMap[state]) {
-        changeMode(modeMap[state]);
-    }
+void sync() {
+    Serial1.write(CMD_SYNC);
+#if DEBUG
+    Serial.println("Sync");
+#endif
 }
+
+void changeMode(mode_t mode) {
+    Serial1.write(CMD_CHANGE_MODE);
+    Serial1.print(mode);
+#if DEBUG
+    Serial.print("Mode "); Serial.println(mode);
+#endif
+}
+
+#if SEND_MIDI
+void sendMIDI(MidiType type) {
+    MidiUSB.sendMIDI({0x0F, type, 0, 0});
+    MidiUSB.flush();
+#   if DEBUG >= 2
+    Serial.print("MIDI "); Serial.println(type, HEX);
+#   endif
+}
+#endif
 
 void forward() {
     digitalWrite(MOTOR_POWER_PIN,     LOW);
     digitalWrite(MOTOR_DIRECTION_PIN, HIGH);
-#if DEBUG >= 2
+#if DEBUG >= 3
     Serial.println("Forward");
 #endif
 }
@@ -119,22 +258,14 @@ void forward() {
 void reverse() {
     digitalWrite(MOTOR_POWER_PIN,     LOW);
     digitalWrite(MOTOR_DIRECTION_PIN, LOW);
-#if DEBUG >= 2
+#if DEBUG >= 3
     Serial.println("Reverse");
 #endif
 }
 
 void stop() {
     digitalWrite(MOTOR_POWER_PIN, HIGH);
-#if DEBUG >= 2
+#if DEBUG >= 3
     Serial.println("Stop");
-#endif
-}
-
-void changeMode(int mode) {
-    Serial1.write(CHANGE_MODE_CMD);
-    Serial1.print(mode);
-#if DEBUG
-    Serial.print("Mode "); Serial.println(mode);
 #endif
 }

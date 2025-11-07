@@ -1,6 +1,6 @@
 #pragma once
 
-using time_t = unsigned long;
+using time_ms = unsigned long;
 
 struct Switch {
     byte const pin;
@@ -13,62 +13,34 @@ struct Switch {
 
     virtual ~Switch() {}
 
-    virtual bool active() const {
-        return digitalRead(pin) == activeState;
-    }
+    virtual bool active() const;
 };
 
 class DebouncedButton : public Switch {
 private:
-    bool   state;
-    bool   lastReading;
-    bool   wasPressed;
-    time_t debounceDelay;
-    time_t lastReadingTime;
-    time_t lastDebounceTime;
+    bool    state;
+    bool    lastReading;
+    bool    wasPressed;
+    time_ms debouncePeriod;
+    time_ms lastReadingTime;
+    time_ms lastDebounceTime;
 
 public:
-    DebouncedButton(byte pin, bool activeState = LOW, time_t debounceDelay = 50) :
+    DebouncedButton(byte pin, bool activeState = LOW, time_ms debouncePeriod = 50) :
         Switch{pin, activeState},
         state{!activeState},
         lastReading{!activeState},
         wasPressed{false},
-        debounceDelay{debounceDelay},
+        debouncePeriod{debouncePeriod},
         lastReadingTime{0},
         lastDebounceTime{0}
     {}
 
-    bool active() const override {
-        return (millis() - lastReadingTime < debounceDelay)
-            ? state == activeState
-            : Switch::active();
-    }
-
-    bool pressed() {
-        wasPressed = state == activeState;
-        bool reading = digitalRead(pin);
-        lastReadingTime = millis();
-        if (reading != lastReading) {
-            lastDebounceTime = lastReadingTime;
-        }
-        if (lastReadingTime - lastDebounceTime > debounceDelay && reading != state) {
-            state = reading;
-        }
-        lastReading = reading;
-        return state == activeState;
-    }
-
-    bool toggled() {
-        return pressed() ^ wasPressed;
-    }
-
-    bool toggledOn() {
-        return pressed() && !wasPressed;
-    }
-
-    bool toggledOff() {
-        return !pressed() && wasPressed;
-    }
+    bool active() const override;
+    bool pressed();
+    bool toggled();
+    bool toggledOn();
+    bool toggledOff();
 };
 
 using Button = DebouncedButton;
