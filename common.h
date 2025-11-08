@@ -1,7 +1,7 @@
 #pragma once
 
-#define _STR(x)   #x
 #define STR(x)    _STR(x)
+#define _STR(x)   #x
 #define ARRLEN(a) (sizeof (a) / sizeof *(a))
 
 #define WAIT_FOREVER() for (;;) delay(100UL)
@@ -14,9 +14,8 @@
 #define CMD_CHANGE_MODE 'M'
 
 #define SYNC_TIMEOUT     1500UL
-#define SYNC_PERIOD_LOW  234UL  // 1/8 notes
-#define SYNC_PERIOD_HIGH 615UL
-#define SYNC_PERIOD_AVG  ((SYNC_PERIOD_LOW + SYNC_PERIOD_HIGH) / 2)
+#define SYNC_PERIOD_LOW  235UL  // 1/8 notes (fastest)
+#define SYNC_PERIOD_HIGH 615UL  // 1/8 notes (slowest)
 
 #define BPM(p) (30000UL / (p))  // 4/4 time
 
