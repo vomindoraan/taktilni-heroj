@@ -138,8 +138,8 @@ time_ms syncMap(int x) {
     float const a0 =  2.33845431e+02f;
 
     // Original regression output range
-    float const baseLow  = 236.22047244f;
-    float const baseHigh = 625.0f;
+    float const baseLow  = 234.0f;
+    float const baseHigh = 615.0f;
 
     // Evaluate polynomial using Horner's method and map to actual sync range
     float baseVal = ((a3 * x + a2) * x + a1) * x + a0;
